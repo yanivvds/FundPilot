@@ -1,0 +1,16 @@
+# Core Vanna with required integrations
+vanna[fastapi,mssql,openai,chromadb]
+
+# For loading environment variables from .env file
+python-dotenv
+
+# MS SQL database connectivity
+pyodbc
+
+# SQL parsing for read-only validation
+sqlparse
+
+# Additional useful packages
+pandas
+plotly
+tabulate
