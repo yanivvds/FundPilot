@@ -42,17 +42,99 @@ logger = logging.getLogger(__name__)
 # ── User resolver ────────────────────────────────────────────────────────
 
 class FundpilotUserResolver(UserResolver):
-    """Simple user resolver for FundPilot database access."""
+    """Supabase-backed user resolver for FundPilot.
+
+    Requires SUPABASE_URL and SUPABASE_SECRET_KEY to be configured.
+    Validates JWTs server-side via Supabase and enforces MFA (AAL2)
+    when REQUIRE_MFA=true. If Supabase is not configured, all access
+    is denied — there is no guest/anonymous fallback.
+    """
+
+    def __init__(self) -> None:
+        supabase_url = os.getenv("SUPABASE_URL", "")
+        supabase_key = os.getenv("SUPABASE_SECRET_KEY", "")
+
+        if supabase_url and supabase_key:
+            import supabase as _supabase
+            self._supabase = _supabase.create_client(
+                supabase_url=supabase_url,
+                supabase_key=supabase_key,
+            )
+            self._require_mfa = os.getenv("REQUIRE_MFA", "true").lower() == "true"
+            logger.info("FundpilotUserResolver: Supabase auth enabled (MFA=%s)", self._require_mfa)
+        else:
+            self._supabase = None
+            self._require_mfa = False
+            logger.error(
+                "FundpilotUserResolver: SUPABASE_URL/SUPABASE_SECRET_KEY not set — "
+                "ALL access will be denied. Configure these in .env to enable auth."
+            )
 
     async def resolve_user(self, request_context: RequestContext) -> User:
-        user_email = (
-            request_context.get_cookie("vanna_email") or "fundpilot@example.com"
-        )
-        group = "admin" if "admin" in user_email else "user"
+        # ── No Supabase configured → deny all access ───────────────────────
+        if self._supabase is None:
+            raise PermissionError(
+                "Authentication is not configured. Contact your administrator."
+            )
+
+        # ── Supabase JWT auth ────────────────────────────────────────────────
+        auth_header = request_context.get_header("Authorization") or ""
+        if not auth_header.startswith("Bearer "):
+            raise PermissionError("Missing or invalid Authorization header")
+
+        token = auth_header.removeprefix("Bearer ").strip()
+        if not token:
+            raise PermissionError("Missing or invalid Authorization header")
+
+        # Validate the JWT server-side via Supabase
+        try:
+            response = self._supabase.auth.get_user(token)
+        except Exception as exc:
+            logger.warning("Supabase token validation failed: %s", exc)
+            raise PermissionError("Authentication failed") from None
+
+        supa_user = response.user
+        if supa_user is None:
+            raise PermissionError("Authentication failed")
+
+        # Enforce MFA (AAL2) when required
+        # Token was already validated server-side; we read the aal claim safely.
+        if self._require_mfa:
+            import base64
+            import json as _json
+
+            try:
+                parts = token.split(".")
+                if len(parts) != 3:
+                    raise ValueError("Malformed JWT")
+                payload_b64 = parts[1]
+                payload_b64 += "=" * (-len(payload_b64) % 4)
+                payload = _json.loads(base64.urlsafe_b64decode(payload_b64))
+                aal = payload.get("aal")
+            except Exception:
+                aal = None
+
+            if aal != "aal2":
+                raise PermissionError(
+                    "MFA verification required. Complete 2FA before accessing FundPilot."
+                )
+
+        # Derive Vanna groups from Supabase app_metadata
+        app_metadata = supa_user.app_metadata or {}
+        roles: list[str] = app_metadata.get("roles", [])
+
+        groups = list(roles) if roles else []
+        if "user" not in groups:
+            groups.append("user")
+
         return User(
-            id=user_email,
-            email=user_email,
-            group_memberships=[group, "user"],
+            id=supa_user.id,
+            username=(supa_user.user_metadata or {}).get(
+                "name", supa_user.email.split("@")[0] if supa_user.email else supa_user.id
+            ),
+            email=supa_user.email or "",
+            group_memberships=groups,
+            metadata={"app_metadata": app_metadata},
         )
 
 

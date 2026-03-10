@@ -55,11 +55,11 @@ export class VannaMessage extends LitElement {
       .message.user {
         margin-left: auto;
         max-width: min(80%, 500px);
-        background: linear-gradient(135deg, var(--vanna-accent-primary-stronger) 0%, var(--vanna-accent-primary-default) 100%);
+        background: #141218;
         color: white;
         box-shadow: var(--vanna-shadow-md);
         border-radius: var(--vanna-chat-bubble-radius) var(--vanna-chat-bubble-radius) var(--vanna-space-2) var(--vanna-chat-bubble-radius);
-        border: 1px solid rgba(255, 255, 255, 0.2);
+        border: none;
       }
 
       .message:hover {
@@ -166,7 +166,7 @@ export class VannaMessage extends LitElement {
       }
 
       :host([theme="dark"]) .message.user {
-        background: linear-gradient(135deg, var(--vanna-accent-primary-stronger) 0%, var(--vanna-accent-primary-default) 100%);
+        background: #1E1B26;
         color: white;
         box-shadow: var(--vanna-shadow-lg);
       }
