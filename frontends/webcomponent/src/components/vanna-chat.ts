@@ -224,6 +224,15 @@ export class VannaChat extends LitElement {
         letter-spacing: 0.02em;
         color: #141218;
         border: none;
+        overflow: hidden;
+        flex-shrink: 0;
+      }
+
+      .chat-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
       }
 
       .header-text {
@@ -241,6 +250,14 @@ export class VannaChat extends LitElement {
         text-transform: uppercase;
         color: #FFFFFF;
         font-family: var(--vanna-font-family-default);
+      }
+
+      .chat-title-logo {
+        height: 22px;
+        width: auto;
+        display: block;
+        filter: brightness(0) invert(1);
+        object-fit: contain;
       }
 
       .chat-subtitle {
@@ -564,11 +581,17 @@ export class VannaChat extends LitElement {
       }
 
       .empty-state-icon {
-        width: 48px;
-        height: 48px;
+        width: 120px;
+        height: 120px;
         margin: 0 auto var(--vanna-space-5);
-        opacity: 0.3;
+        opacity: 0.75;
         color: #45405A;
+      }
+
+      .empty-state-icon img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
       }
 
       .empty-state-text {
@@ -632,8 +655,8 @@ export class VannaChat extends LitElement {
         }
 
         .empty-state-icon {
-          width: 56px;
-          height: 56px;
+          width: 96px;
+          height: 96px;
           margin-bottom: var(--vanna-space-5);
         }
 
@@ -656,6 +679,7 @@ export class VannaChat extends LitElement {
   @property({ attribute: 'ws-endpoint' }) wsEndpoint = '/api/vanna/v2/chat_websocket';
   @property({ attribute: 'poll-endpoint' }) pollEndpoint = '/api/vanna/v2/chat_poll';
   @property() subtitle = '';
+  @property({ attribute: 'user-email' }) userEmail = '';
   @property() startingState: 'normal' | 'maximized' | 'minimized' = 'normal';
 
   @state() private currentMessage = '';
@@ -842,7 +866,8 @@ export class VannaChat extends LitElement {
       lifecycle: 'create',
       data: {
         content: messageText,
-        sender: 'user'
+        sender: 'user',
+        sender_email: this.userEmail
       },
       children: [],
       timestamp: new Date().toISOString(),
@@ -913,23 +938,6 @@ export class VannaChat extends LitElement {
       );
       return false; // Failure
     }
-  }
-
-  private getTitleInitials(): string {
-    const title = (this.title || '').trim();
-    if (!title) {
-      return 'VA';
-    }
-
-    const parts = title.split(/\s+/).filter(Boolean);
-    if (parts.length === 1) {
-      return parts[0].charAt(0).toUpperCase() || 'V';
-    }
-
-    const first = parts[0].charAt(0);
-    const last = parts[parts.length - 1].charAt(0);
-    const initials = `${first}${last}`.toUpperCase();
-    return initials || 'VA';
   }
 
   private minimizeWindow(e?: Event) {
@@ -1262,9 +1270,7 @@ export class VannaChat extends LitElement {
       <!-- Minimized icon - shown only when minimized via CSS and allowMinimize is true -->
       ${this.allowMinimize ? html`
         <div class="minimized-icon" @click=${this.restoreWindow}>
-          <svg viewBox="0 0 24 24" fill="currentColor" width="32" height="32">
-            <path d="M20 2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14l4 4V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/>
-          </svg>
+          <img src="/img/app-icon-512.png" alt="FundPilot openen" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">
         </div>
       ` : ''}
 
@@ -1275,9 +1281,13 @@ export class VannaChat extends LitElement {
           <div class="chat-header">
             <div class="header-top">
               <div class="header-left">
-                <div class="chat-avatar" aria-hidden="true">${this.getTitleInitials()}</div>
+                <div class="chat-avatar" aria-hidden="true">
+                  <img src="/img/app-icon-512.png" alt="" width="36" height="36">
+                </div>
                 <div class="header-text">
-                  <h2 class="chat-title">${this.title}</h2>
+                  <h2 class="chat-title" aria-label="${this.title}">
+                    <img src="/img/fund_pilot.png" alt="${this.title}" class="chat-title-logo">
+                  </h2>
                 </div>
               </div>
               <div class="header-top-actions">
@@ -1321,7 +1331,7 @@ export class VannaChat extends LitElement {
             <!-- Empty state - shown when no components exist -->
             <div class="empty-state" id="empty-state">
               <div class="empty-state-icon">
-                <img src="/img/empty-first-query.svg" alt="" aria-hidden="true" style="width:100%;height:100%;opacity:0.6;">
+                <img src="/img/empty-first-query.svg" alt="" aria-hidden="true">
               </div>
               <div class="empty-state-text">Stel een vraag</div>
               <div class="empty-state-subtitle">Typ uw vraag hieronder om te beginnen</div>

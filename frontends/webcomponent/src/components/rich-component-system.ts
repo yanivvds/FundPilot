@@ -110,9 +110,22 @@ export class CardComponentRenderer extends BaseComponentRenderer {
       actions: component.data?.actions
     });
 
+    // Wrapper with agent meta header + body
+    const _cardTime = new Date(component.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const wrapper = document.createElement('div');
+    wrapper.className = 'agent-message-row';
+    wrapper.dataset.componentId = component.id;
+    wrapper.innerHTML = `
+      <div class="agent-meta">
+        <img class="agent-meta-icon" src="/img/app-icon-512.png" alt="" width="22" height="22">
+        <span class="agent-meta-name">Finn</span>
+        <span class="agent-meta-time">${_cardTime}</span>
+      </div>
+      <div class="agent-message-body"></div>
+    `;
+
     const card = document.createElement('div');
     card.className = 'rich-component rich-card';
-    card.dataset.componentId = component.id;
 
     const { title, content, subtitle, icon, status, actions = [], collapsible, collapsed } = component.data;
 
@@ -214,7 +227,7 @@ export class CardComponentRenderer extends BaseComponentRenderer {
       });
     }
 
-    return card;
+    return wrapper;
   }
 
   update(element: HTMLElement, component: RichComponent, updates?: Record<string, any>): void {
@@ -777,9 +790,21 @@ export class DataFrameComponentRenderer extends BaseComponentRenderer {
 // Text component renderer
 export class TextComponentRenderer extends BaseComponentRenderer {
   render(component: RichComponent): HTMLElement {
+    const _textTime = new Date(component.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const wrapper = document.createElement('div');
+    wrapper.className = 'agent-message-row';
+    wrapper.dataset.componentId = component.id;
+    wrapper.innerHTML = `
+      <div class="agent-meta">
+        <img class="agent-meta-icon" src="/img/app-icon-512.png" alt="" width="22" height="22">
+        <span class="agent-meta-name">Finn</span>
+        <span class="agent-meta-time">${_textTime}</span>
+      </div>
+      <div class="agent-message-body"></div>
+    `;
+
     const container = document.createElement('div');
     container.className = 'rich-component rich-text';
-    container.dataset.componentId = component.id;
 
     const {
       content,
@@ -813,8 +838,8 @@ export class TextComponentRenderer extends BaseComponentRenderer {
       `;
     }
 
-
-    return container;
+    (wrapper.querySelector('.agent-message-body') as HTMLElement).appendChild(container);
+    return wrapper;
   }
 
   private escapeHtml(text: string): string {
@@ -1662,13 +1687,13 @@ export class ArtifactComponentRenderer extends BaseComponentRenderer {
 export class UserMessageComponentRenderer extends BaseComponentRenderer {
   render(component: RichComponent): HTMLElement {
     const messageEl = document.createElement('vanna-message');
-    messageEl.setAttribute('theme', 'light'); // Could be made dynamic
+    messageEl.setAttribute('theme', 'light');
     messageEl.dataset.componentId = component.id;
     
-    // Set properties for vanna-message
     (messageEl as any).content = component.data.content || '';
     (messageEl as any).type = 'user';
     (messageEl as any).timestamp = Date.parse(component.timestamp);
+    (messageEl as any).senderLabel = component.data.sender_email || '';
     
     return messageEl;
   }

@@ -4,7 +4,10 @@ Biedt een webinterface om in natuurlijke taal (Nederlands) te chatten met 6 data
 """
 
 import os
+import shutil
+import subprocess
 import logging
+from pathlib import Path
 from dotenv import load_dotenv
 from fundpilot_config import create_fundpilot_agent
 from vanna.servers.fastapi import VannaFastAPIServer
@@ -19,6 +22,42 @@ DATABASES = [
     "CWESystemConfig_Archive", "CWESystemData_Archive", "CWEProjectData_Archive",
 ]
 
+ROOT = Path(__file__).parent
+FRONTEND_DIR = ROOT / "frontends" / "webcomponent"
+DIST_JS = FRONTEND_DIR / "dist" / "vanna-components.js"
+STATIC_JS = ROOT / "static" / "vanna-components.js"
+
+
+def build_frontend():
+    """Bouw de frontend web component en kopieer naar static/."""
+    if not FRONTEND_DIR.exists():
+        print("  [frontend] Map niet gevonden, build overgeslagen.")
+        return
+
+    if not shutil.which("npm"):
+        print("  [frontend] npm niet gevonden, build overgeslagen.")
+        return
+
+    print("  [frontend] npm run build...")
+    result = subprocess.run(
+        ["npm", "run", "build"],
+        cwd=FRONTEND_DIR,
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        print("  [frontend] Build mislukt:")
+        print(result.stdout[-2000:] if result.stdout else "")
+        print(result.stderr[-2000:] if result.stderr else "")
+        return
+
+    if DIST_JS.exists():
+        STATIC_JS.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(DIST_JS, STATIC_JS)
+        print(f"  [frontend] Gebouwd en gekopieerd naar {STATIC_JS.relative_to(ROOT)}")
+    else:
+        print("  [frontend] dist/vanna-components.js niet gevonden na build.")
+
 
 def main():
     """Start de FundPilot webserver."""
@@ -27,6 +66,11 @@ def main():
 
     try:
         load_dotenv()
+
+        # Build frontend before starting the server
+        build_frontend()
+        print()
+
         agent = create_fundpilot_agent()
 
         print("FundPilot Agent succesvol aangemaakt.")

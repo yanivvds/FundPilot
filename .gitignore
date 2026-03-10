@@ -23,6 +23,9 @@ milvus.db
 /sql
 .venv/*
 
+# Generated build artifact - rebuilt on server start
+static/vanna-components.js
+
 # Frontend builds and dependencies
 frontends/**/node_modules/
 frontends/**/static/

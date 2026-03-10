@@ -29,6 +29,51 @@ export const richComponentStyles = css`
     color: var(--vanna-foreground-default);
   }
 
+  /* Agent attribution row – wraps cards and text blocks */
+  .agent-message-row {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: var(--vanna-space-5);
+  }
+
+  .agent-message-row .agent-meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 4px;
+  }
+
+  .agent-message-row .agent-meta-icon {
+    width: 22px;
+    height: 22px;
+    border-radius: 5px;
+    object-fit: cover;
+    display: block;
+    flex-shrink: 0;
+  }
+
+  .agent-message-row .agent-meta-name {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--vanna-foreground-default);
+  }
+
+  .agent-message-row .agent-meta-time {
+    font-size: 11px;
+    color: var(--vanna-foreground-dimmest);
+    font-weight: 400;
+  }
+
+  .agent-message-row .agent-message-body {
+    min-width: 0;
+  }
+
+  /* Remove the outer margin when wrapped in agent-message-row */
+  .agent-message-row .rich-component {
+    margin-bottom: 0;
+  }
+
   /* Card */
   .rich-card {
     overflow: hidden;
