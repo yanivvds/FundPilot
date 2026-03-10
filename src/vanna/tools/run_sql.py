@@ -53,14 +53,45 @@ class RunSqlTool(Tool[RunSqlToolArgs]):
     def get_args_schema(self) -> Type[RunSqlToolArgs]:
         return RunSqlToolArgs
 
+    @staticmethod
+    def _get_query_type(sql: str) -> str:
+        """Determine the query type, handling CTEs, sub-selects, and comments.
+
+        Returns "SELECT" for:
+          - SELECT ...
+          - WITH ... AS (...) SELECT ...  (CTEs)
+          - (SELECT ...)                  (sub-selects)
+          - Queries preceded by SQL comments (-- or /* */)
+
+        Returns the first keyword (e.g. "INSERT", "UPDATE") for everything else.
+        """
+        import re
+
+        # Strip leading whitespace, single-line comments (--), and block comments (/* */)
+        cleaned = sql.strip()
+        cleaned = re.sub(r'--[^\n]*', '', cleaned)      # remove -- comments
+        cleaned = re.sub(r'/\*.*?\*/', '', cleaned, flags=re.DOTALL)  # remove /* */ comments
+        cleaned = cleaned.strip()
+
+        if not cleaned:
+            return "UNKNOWN"
+
+        first_word = cleaned.upper().split()[0].lstrip('(')
+
+        # WITH = CTE preamble, always followed by SELECT
+        if first_word in ("SELECT", "WITH"):
+            return "SELECT"
+
+        return first_word
+
     async def execute(self, context: ToolContext, args: RunSqlToolArgs) -> ToolResult:
         """Execute a SQL query using the injected SqlRunner."""
         try:
             # Use the injected SqlRunner to execute the query
             df = await self.sql_runner.run_sql(args, context)
 
-            # Determine query type
-            query_type = args.sql.strip().upper().split()[0]
+            # Determine query type (handles CTEs, sub-selects, comments)
+            query_type = self._get_query_type(args.sql)
 
             if query_type == "SELECT":
                 # Handle SELECT queries with results
