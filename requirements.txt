@@ -4,6 +4,9 @@ vanna[fastapi,mssql,openai,chromadb]
 # For loading environment variables from .env file
 python-dotenv
 
+# Supabase for authentication and user management
+supabase>=2.0.0
+
 # MS SQL database connectivity
 pyodbc
 

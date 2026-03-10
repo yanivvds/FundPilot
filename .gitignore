@@ -21,6 +21,7 @@ milvus.db
 .milvus.db.lock
 /vanna_data
 /sql
+.venv/*
 
 # Frontend builds and dependencies
 frontends/**/node_modules/
