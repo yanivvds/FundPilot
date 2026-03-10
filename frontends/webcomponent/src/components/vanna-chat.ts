@@ -30,7 +30,7 @@ export class VannaChat extends LitElement {
         --chat-surface: var(--vanna-background-root);
         --chat-muted: var(--vanna-background-default);
         --chat-muted-stronger: var(--vanna-background-higher);
-        max-width: 1024px;
+        max-width: 1600px;
         margin: 0 auto;
         background: var(--vanna-background-root);
         border: 1px solid var(--vanna-outline-dimmer);
@@ -128,9 +128,9 @@ export class VannaChat extends LitElement {
 
       .chat-layout {
         display: grid;
-        grid-template-columns: minmax(0, 1fr) 300px;
-        height: 600px;
-        max-height: 80vh;
+        grid-template-columns: minmax(0, 1fr) 360px;
+        height: 640px;
+        max-height: 82vh;
         background: var(--chat-muted);
       }
 
@@ -1352,6 +1352,7 @@ export class VannaChat extends LitElement {
             <div class="chat-input-container">
               <textarea
                 class="message-input"
+                autocomplete="off"
                 .placeholder=${this.placeholder}
                 .disabled=${this.disabled}
                 @input=${this.handleInput}

@@ -19,6 +19,7 @@ from vanna.capabilities.sql_runner import SqlRunner, RunSqlToolArgs
 from vanna.core.tool import ToolContext
 
 
+# Keywords that must match as whole words (word-boundary on both sides)
 FORBIDDEN_KEYWORDS = {
     "INSERT",
     "UPDATE",
@@ -39,9 +40,10 @@ FORBIDDEN_KEYWORDS = {
     "BULK",
     "OPENROWSET",
     "OPENDATASOURCE",
-    "xp_",
-    "sp_",
 }
+
+# Prefixes that should block any token starting with them (e.g. SP_EXECUTESQL)
+FORBIDDEN_PREFIXES = {"XP_", "SP_"}
 
 KNOWN_DATABASES = {
     "CWESystemConfig",
@@ -115,16 +117,26 @@ class ReadOnlySqlRunner(SqlRunner):
                 )
 
             sql_upper = sql.upper()
+
+            # Check whole-word forbidden keywords
             for keyword in FORBIDDEN_KEYWORDS:
                 pattern = rf"\b{re.escape(keyword)}\b"
                 if re.search(pattern, sql_upper):
-                    if keyword in ("sp_", "xp_"):
-                        idx = sql_upper.find(keyword)
-                        before = sql[:idx]
-                        if before.count("'") % 2 == 1:
-                            continue
                     raise ValueError(
                         f"❌ Het gebruik van '{keyword}' is niet toegestaan. "
+                        f"Dit systeem ondersteunt alleen SELECT-query's voor data-analyse."
+                    )
+
+            # Check forbidden prefixes (e.g. SP_EXECUTESQL, XP_CMDSHELL)
+            for prefix in FORBIDDEN_PREFIXES:
+                pattern = rf"\b{re.escape(prefix)}\w+"
+                for match in re.finditer(pattern, sql_upper):
+                    # Skip occurrences inside string literals
+                    before = sql_upper[: match.start()]
+                    if before.count("'") % 2 == 1:
+                        continue
+                    raise ValueError(
+                        f"❌ Het gebruik van '{prefix}...' is niet toegestaan. "
                         f"Dit systeem ondersteunt alleen SELECT-query's voor data-analyse."
                     )
 
