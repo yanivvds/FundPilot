@@ -69,8 +69,8 @@ export class VannaProgressTracker extends LitElement {
       }
 
       .progress-item.in_progress {
-        background: rgba(240, 165, 0, 0.06);
-        border-left: 3px solid #F0A500;
+        background: rgba(0, 123, 255, 0.05);
+        border-left: 3px solid var(--vanna-accent-primary-default);
       }
 
       .progress-item.completed {
@@ -188,13 +188,31 @@ export class VannaProgressTracker extends LitElement {
       status: 'pending',
       detail
     }];
+    this.updateComplete.then(() => requestAnimationFrame(() => this._scrollListToBottom()));
     return itemId;
+  }
+
+  private _scrollListToBottom() {
+    // Scroll the internal list container
+    const list = this.shadowRoot?.querySelector('.progress-list') as HTMLElement | null;
+    if (list) {
+      list.scrollTop = list.scrollHeight;
+    }
+    // Also scroll the outer sidebar in the parent shadow DOM
+    const root = this.getRootNode() as ShadowRoot | Document;
+    const sidebar = root instanceof ShadowRoot
+      ? root.querySelector('.sidebar') as HTMLElement | null
+      : null;
+    if (sidebar) {
+      sidebar.scrollTop = sidebar.scrollHeight;
+    }
   }
 
   updateItem(id: string, status: ProgressItem['status'], detail?: string) {
     this.items = this.items.map(item =>
       item.id === id ? { ...item, status, detail } : item
     );
+    this.updateComplete.then(() => requestAnimationFrame(() => this._scrollListToBottom()));
   }
 
   clearItems() {

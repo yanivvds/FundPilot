@@ -622,9 +622,18 @@ export const richComponentStyles = css`
   }
 
   /* Text components */
+  .rich-component.rich-text {
+    background: #FFFFFF;
+    border: 1px solid #E8E4DC;
+    border-top: 3px solid #F0A500;
+    border-radius: var(--vanna-border-radius-md);
+    overflow: hidden;
+    box-shadow: 0 1px 4px rgba(20, 18, 24, 0.06);
+  }
+
   .text-markdown {
-    padding-left: var(--vanna-space-4);
-    line-height: 1.6;
+    padding: var(--vanna-space-5) var(--vanna-space-6);
+    line-height: 1.7;
     font-family: var(--vanna-font-family-default);
   }
 
@@ -636,6 +645,21 @@ export const richComponentStyles = css`
   .text-markdown h6 {
     margin: var(--vanna-space-3) 0 var(--vanna-space-2) 0;
     color: var(--vanna-foreground-default);
+    letter-spacing: -0.01em;
+  }
+
+  .text-markdown h1 {
+    font-size: 1.375rem;
+    font-weight: 700;
+    color: #141218;
+    border-bottom: 1px solid #F0EDEA;
+    padding-bottom: var(--vanna-space-3);
+    margin-bottom: var(--vanna-space-4);
+  }
+
+  .text-markdown h2 {
+    font-size: 1.125rem;
+    font-weight: 600;
   }
 
   .text-markdown h1:first-child,
@@ -649,7 +673,8 @@ export const richComponentStyles = css`
 
   .text-markdown p {
     margin: var(--vanna-space-2) 0;
-    color: var(--vanna-foreground-default);
+    color: #45405A;
+    font-size: 0.9375rem;
   }
 
   .text-markdown ul,
