@@ -208,43 +208,43 @@ class DefaultWorkflowHandler(WorkflowHandler):
 
         # Build concise content
         if not analysis["has_sql"]:
-            title = "Admin: Setup Required"
-            content = "**🔒 Admin View** - You have admin privileges and will see additional system information.\n\n**Vanna AI** requires a SQL connection to function.\n\nPlease configure a SQL tool to get started."
+            title = "Admin: Configuratie vereist"
+            content = "**Admin** -- U heeft beheerdersrechten en ziet aanvullende systeeminformatie.\n\n**FundPilot** heeft een SQL-verbinding nodig om te functioneren.\n\nConfigureer een SQL-tool om te beginnen."
             status = "error"
-            icon = "⚠️"
+            icon = ""
         elif analysis["is_complete"]:
-            title = "Admin: System Ready"
-            content = "**🔒 Admin View** - You have admin privileges and will see additional system information.\n\n**Vanna AI** is fully configured and ready.\n\n"
-            content += "**Setup:** SQL ✓ | Memory ✓ | Visualization ✓"
+            title = "Admin: Systeem gereed"
+            content = "**Admin** -- U heeft beheerdersrechten en ziet aanvullende systeeminformatie.\n\n**FundPilot** is volledig geconfigureerd en gereed.\n\n"
+            content += "**Setup:** SQL OK | Memory OK | Visualisatie OK"
             status = "success"
-            icon = "✅"
+            icon = ""
         else:
-            title = "Admin: System Ready"
-            content = "**🔒 Admin View** - You have admin privileges and will see additional system information.\n\n**Vanna AI** is ready to query your database.\n\n"
+            title = "Admin: Systeem gereed"
+            content = "**Admin** -- U heeft beheerdersrechten en ziet aanvullende systeeminformatie.\n\n**FundPilot** is gereed om uw database te bevragen.\n\n"
             setup_items = []
-            setup_items.append("SQL ✓")
-            setup_items.append("Memory ✓" if analysis["has_memory"] else "Memory ✗")
-            setup_items.append("Viz ✓" if analysis["has_viz"] else "Viz ✗")
+            setup_items.append("SQL OK")
+            setup_items.append("Memory OK" if analysis["has_memory"] else "Memory --")
+            setup_items.append("Viz OK" if analysis["has_viz"] else "Viz --")
             content += f"**Setup:** {' | '.join(setup_items)}"
             status = "warning" if not analysis["has_memory"] else "success"
-            icon = "⚠️" if not analysis["has_memory"] else "✅"
+            icon = ""
 
         # Add memory management info for admins
         actions: List[Dict[str, Any]] = []
         if analysis["has_sql"]:
             actions.append(
                 {
-                    "label": "💡 Help",
+                    "label": "Help",
                     "action": "/help",
                     "variant": "secondary",
                 }
             )
 
         if analysis["has_memory"]:
-            content += "\n\n**Memory Management:** Tool and text memories are available. As an admin, you can view and manage these memories to help me learn from successful queries."
+            content += "\n\n**Geheugenbeheer:** Tool- en tekstherinneringen zijn beschikbaar. Als beheerder kunt u deze beheren om het systeem te laten leren van succesvolle queries."
             actions.append(
                 {
-                    "label": "🧠 View Memories",
+                    "label": "Geheugen bekijken",
                     "action": "/memories",
                     "variant": "secondary",
                 }
@@ -267,14 +267,14 @@ class DefaultWorkflowHandler(WorkflowHandler):
 
         if not analysis["has_sql"]:
             content = (
-                "# ⚠️ Setup Required\n\n"
-                "Vanna AI requires configuration before it can help you analyze data."
+                "# Configuratie vereist\n\n"
+                "FundPilot heeft een SQL-verbinding nodig voordat het uw data kan analyseren."
             )
         else:
             content = (
-                "# 👋 Welcome to Vanna AI\n\n"
-                "I'm your AI data analyst assistant. Ask me anything about your data in plain English!\n\n"
-                "Type `/help` to see what I can do."
+                "# Welkom bij FundPilot\n\n"
+                "Uw AI data-analist voor fondsenwervingsdata. Stel een vraag in het Nederlands over uw data.\n\n"
+                "Typ `/help` voor een overzicht van de mogelijkheden."
             )
 
         return UiComponent(

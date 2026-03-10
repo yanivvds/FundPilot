@@ -55,19 +55,23 @@ class VannaFastAPIServer:
 
             app.add_middleware(CORSMiddleware, **cors_params)
 
-        # Add static file serving in dev mode
-        dev_mode = self.config.get("dev_mode", False)
-        if dev_mode:
-            static_folder = self.config.get("static_folder", "static")
-            try:
-                import os
+        # Serve static files (local component builds, assets)
+        static_folder = self.config.get("static_folder", "static")
+        try:
+            import os
 
-                if os.path.exists(static_folder):
-                    app.mount(
-                        "/static", StaticFiles(directory=static_folder), name="static"
-                    )
-            except Exception:
-                pass  # Static files not available
+            if os.path.exists(static_folder):
+                app.mount(
+                    "/static", StaticFiles(directory=static_folder), name="static"
+                )
+            # Serve image assets from img/ directory
+            img_folder = self.config.get("img_folder", "img")
+            if os.path.exists(img_folder):
+                app.mount(
+                    "/img", StaticFiles(directory=img_folder), name="img"
+                )
+        except Exception:
+            pass  # Static files not available
 
         # Register routes
         register_chat_routes(app, self.chat_handler, self.config)
