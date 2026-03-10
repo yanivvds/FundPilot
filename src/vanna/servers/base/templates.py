@@ -457,6 +457,7 @@ def _get_auth_script(supabase_url: str, supabase_publishable_key: str) -> str:
 
                 // Set auth header, then mount (order matters!)
                 const mountAndShow = () => {{
+                    chat.setAttribute('user-email', email || '');
                     chat.setCustomHeaders({{ 'Authorization': `Bearer ${{token}}` }});
                     if (isNew) mount.appendChild(chat);
                     loginContainer.classList.add('hidden');
@@ -707,7 +708,7 @@ def _get_auth_script(supabase_url: str, supabase_publishable_key: str) -> str:
             if (navDisplay) navDisplay.style.display = 'none';
             if (navLogout) navLogout.style.display = 'none';
         }};
-        const ensureChat = () => {{
+        const ensureChat = (email = '') => {{
             const mount = document.getElementById('chatMount');
             if (!mount.querySelector('vanna-chat')) {{
                 const chat = document.createElement('vanna-chat');
@@ -716,8 +717,10 @@ def _get_auth_script(supabase_url: str, supabase_publishable_key: str) -> str:
                 chat.setAttribute('sse-endpoint', mount.dataset.sseEndpoint || '');
                 chat.setAttribute('ws-endpoint', mount.dataset.wsEndpoint || '');
                 chat.setAttribute('poll-endpoint', mount.dataset.pollEndpoint || '');
+                if (email) chat.setAttribute('user-email', email);
                 mount.appendChild(chat);
             }}
+        }};
         }};
         document.addEventListener('DOMContentLoaded', () => {{
             const email = getCookie('vanna_email');
@@ -728,7 +731,7 @@ def _get_auth_script(supabase_url: str, supabase_publishable_key: str) -> str:
                 chatSections.classList.remove('hidden');
                 loggedInEmail.textContent = email;
                 showNavUser(email);
-                ensureChat();
+                ensureChat(email);
             }}
             loginButton.addEventListener('click', () => {{
                 const email = emailInput.value.trim();
@@ -740,7 +743,7 @@ def _get_auth_script(supabase_url: str, supabase_publishable_key: str) -> str:
                 chatSections.classList.remove('hidden');
                 loggedInEmail.textContent = email;
                 showNavUser(email);
-                ensureChat();
+                ensureChat(email);
             }});
             logoutButton.addEventListener('click', () => {{
                 deleteCookie('vanna_email');

@@ -2,6 +2,8 @@ import { LitElement, html, css } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { vannaDesignTokens } from '../styles/vanna-design-tokens.js';
 
+const AGENT_NAME = 'Finn';
+
 @customElement('vanna-message')
 export class VannaMessage extends LitElement {
   static styles = [
@@ -10,9 +12,68 @@ export class VannaMessage extends LitElement {
       :host {
         display: block;
         padding: 0 var(--vanna-space-2);
-        margin-bottom: var(--vanna-space-4);
+        margin-bottom: var(--vanna-space-5);
         font-family: var(--vanna-font-family-default);
         animation: fade-in-up 0.25s ease-out;
+      }
+
+      /* Outer column: meta header + bubble */
+      .message-wrapper {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+
+      .message-wrapper.assistant { align-items: flex-start; }
+      .message-wrapper.user      { align-items: flex-end; }
+
+      /* Meta row: icon · name · time */
+      .message-meta {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 0 4px;
+      }
+
+      .message-wrapper.user .message-meta {
+        flex-direction: row-reverse;
+      }
+
+      /* Agent icon – small rounded square */
+      .meta-agent-icon {
+        width: 22px;
+        height: 22px;
+        border-radius: 5px;
+        object-fit: cover;
+        display: block;
+        flex-shrink: 0;
+      }
+
+      /* User avatar image */
+      .meta-user-icon {
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        object-fit: cover;
+        display: block;
+        flex-shrink: 0;
+      }
+
+      .meta-name {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--vanna-foreground-default);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 200px;
+      }
+
+      .meta-time {
+        font-size: 11px;
+        color: var(--vanna-foreground-dimmest);
+        font-weight: 400;
+        white-space: nowrap;
       }
 
       :host(:last-of-type) {
@@ -53,7 +114,6 @@ export class VannaMessage extends LitElement {
       }
 
       .message.user {
-        margin-left: auto;
         max-width: min(80%, 500px);
         background: #141218;
         color: white;
@@ -106,45 +166,6 @@ export class VannaMessage extends LitElement {
         border-color: rgba(255, 255, 255, 0.3);
       }
 
-      .message-timestamp {
-        display: inline-flex;
-        align-items: center;
-        gap: var(--vanna-space-1);
-        font-size: 11px;
-        letter-spacing: 0.05em;
-        margin-top: var(--vanna-space-2);
-        font-family: var(--vanna-font-family-default);
-        opacity: 0.7;
-        font-weight: 500;
-      }
-
-      .message-timestamp::before {
-        content: '';
-        width: 3px;
-        height: 3px;
-        border-radius: var(--vanna-border-radius-full);
-        background: currentColor;
-        opacity: 0.8;
-      }
-
-      .message.assistant .message-timestamp {
-        align-self: flex-start;
-        color: var(--vanna-foreground-dimmest);
-      }
-
-      .message.assistant .message-timestamp::before {
-        background: var(--vanna-accent-primary-default);
-      }
-
-      .message.user .message-timestamp {
-        align-self: flex-end;
-        color: rgba(255, 255, 255, 0.8);
-      }
-
-      .message.user .message-timestamp::before {
-        background: rgba(255, 255, 255, 0.8);
-      }
-
       :host([theme="dark"]) .message.assistant {
         background: var(--vanna-background-higher);
         border: 1px solid var(--vanna-outline-default);
@@ -157,14 +178,6 @@ export class VannaMessage extends LitElement {
         border-color: var(--vanna-outline-default);
       }
 
-      :host([theme="dark"]) .message.assistant .message-timestamp {
-        color: var(--vanna-foreground-dimmest);
-      }
-
-      :host([theme="dark"]) .message.assistant .message-timestamp::before {
-        background: var(--vanna-accent-primary-default);
-      }
-
       :host([theme="dark"]) .message.user {
         background: #1E1B26;
         color: white;
@@ -174,14 +187,6 @@ export class VannaMessage extends LitElement {
       :host([theme="dark"]) .message.user .message-content code {
         background: rgba(255, 255, 255, 0.15);
         border-color: rgba(255, 255, 255, 0.25);
-      }
-
-      :host([theme="dark"]) .message.user .message-timestamp {
-        color: rgba(255, 255, 255, 0.8);
-      }
-
-      :host([theme="dark"]) .message.user .message-timestamp::before {
-        background: rgba(255, 255, 255, 0.8);
       }
 
       @media (max-width: 600px) {
@@ -200,20 +205,30 @@ export class VannaMessage extends LitElement {
   @property() type: 'user' | 'assistant' = 'user';
   @property({ type: Number }) timestamp = Date.now();
   @property({ reflect: true }) theme = 'light';
+  @property() senderLabel = '';
 
-  private formatTimestamp(timestamp: number): string {
-    return new Date(timestamp).toLocaleTimeString([], {
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+  private formatTimestamp(ts: number): string {
+    return new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   }
 
   render() {
     return html`
-      <div class="message ${this.type}">
-        <div class="message-content">${this.content}</div>
-        <div class="message-timestamp">
-          ${this.formatTimestamp(this.timestamp)}
+      <div class="message-wrapper ${this.type}">
+        <div class="message-meta">
+          ${this.type === 'assistant'
+            ? html`
+                <img class="meta-agent-icon" src="/img/app-icon-512.png" alt="" width="22" height="22">
+                <span class="meta-name">${AGENT_NAME}</span>
+              `
+            : html`
+                <img class="meta-user-icon" src="/img/avatar-placeholder.png" alt="" width="22" height="22">
+                <span class="meta-name">Jij</span>
+              `
+          }
+          <span class="meta-time">${this.formatTimestamp(this.timestamp)}</span>
+        </div>
+        <div class="message ${this.type}">
+          <div class="message-content">${this.content}</div>
         </div>
       </div>
     `;
