@@ -17,3 +17,6 @@ sqlparse
 pandas
 plotly
 tabulate
+
+# Web search (no API key required)
+duckduckgo-search>=6.0

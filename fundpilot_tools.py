@@ -692,3 +692,102 @@ class ValidateProjectTablesForColumnsTool(Tool[ValidateProjectTablesArgs]):
                 ),
                 error=str(e),
             )
+
+
+# ---------------------------------------------------------------------------
+# Web search
+# ---------------------------------------------------------------------------
+
+
+class WebSearchArgs(BaseModel):
+    """Arguments for searching the web via DuckDuckGo."""
+
+    query: str = Field(
+        description=(
+            "De zoekterm om op het web te zoeken naar actuele informatie. "
+            "Gebruik dit voor vragen over nieuws, regelgeving, marktinformatie "
+            "of andere actuele onderwerpen die niet in de databases staan."
+        )
+    )
+
+
+class WebSearchTool(Tool[WebSearchArgs]):
+    """Free web search via DuckDuckGo — no API key required."""
+
+    @property
+    def name(self) -> str:
+        return "web_search"
+
+    @property
+    def description(self) -> str:
+        return (
+            "Zoek actuele informatie op het web via DuckDuckGo. "
+            "Gebruik dit voor vragen over nieuws, wet- en regelgeving, marktinformatie "
+            "of andere actuele onderwerpen die niet in de interne databases beschikbaar zijn."
+        )
+
+    def get_args_schema(self) -> Type[WebSearchArgs]:
+        return WebSearchArgs
+
+    async def execute(self, context: ToolContext, args: WebSearchArgs) -> ToolResult:
+        from duckduckgo_search import DDGS
+
+        def _search() -> list[dict]:
+            with DDGS() as ddgs:
+                return list(ddgs.text(args.query, max_results=5))
+
+        try:
+            results = await asyncio.to_thread(_search)
+        except Exception as exc:
+            logger.exception("Web search failed for query: %s", args.query)
+            msg = f"Zoekfout: {exc}"
+            return ToolResult(
+                success=False,
+                result_for_llm=msg,
+                ui_component=UiComponent(
+                    rich_component=StatusCardComponent(
+                        title="Zoeken mislukt",
+                        status="error",
+                        description="De webzoekopdracht kon niet worden uitgevoerd.",
+                        icon="❌",
+                    ),
+                    simple_component=SimpleTextComponent(text="Webzoekopdracht mislukt."),
+                ),
+                error=str(exc),
+            )
+
+        if not results:
+            return ToolResult(
+                success=True,
+                result_for_llm="Geen resultaten gevonden voor deze zoekopdracht.",
+                ui_component=UiComponent(
+                    rich_component=StatusCardComponent(
+                        title="Geen resultaten",
+                        status="warning",
+                        description=f'Geen webresultaten voor: "{args.query}"',
+                        icon="🔍",
+                    ),
+                    simple_component=SimpleTextComponent(text="Geen webresultaten gevonden."),
+                ),
+            )
+
+        text = "\n\n".join(
+            f"**{r.get('title', '').strip()}**\n{r.get('body', '').strip()}\n{r.get('href', '')}"
+            for r in results
+        )
+
+        return ToolResult(
+            success=True,
+            result_for_llm=text,
+            ui_component=UiComponent(
+                rich_component=StatusCardComponent(
+                    title="Webzoekresultaten",
+                    status="success",
+                    description=f'{len(results)} resultaten voor: "{args.query}"',
+                    icon="🌐",
+                ),
+                simple_component=SimpleTextComponent(
+                    text=f"Webzoekopdracht voltooid: {len(results)} resultaten."
+                ),
+            ),
+        )

@@ -30,6 +30,11 @@ STATIC_JS = ROOT / "static" / "vanna-components.js"
 
 def build_frontend():
     """Bouw de frontend web component en kopieer naar static/."""
+    # Skip rebuild if the static bundle already exists (e.g. Docker pre-built)
+    if STATIC_JS.exists() and os.getenv("SKIP_FRONTEND_BUILD", "").lower() in ("1", "true"):
+        print("  [frontend] Bestaande build gevonden, rebuild overgeslagen.")
+        return
+
     if not FRONTEND_DIR.exists():
         print("  [frontend] Map niet gevonden, build overgeslagen.")
         return

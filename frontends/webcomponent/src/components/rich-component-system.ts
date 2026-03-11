@@ -1960,6 +1960,26 @@ export class ComponentManager {
     ensureRichComponentStyles(this.container);
   }
 
+  /**
+   * Remove the component with the given ID and all components added after it.
+   * Used when a user edits and resends a message.
+   */
+  removeFromComponent(id: string): void {
+    const ids = Array.from(this.components.keys());
+    const startIndex = ids.indexOf(id);
+    if (startIndex === -1) return;
+
+    for (let i = startIndex; i < ids.length; i++) {
+      const componentId = ids[i];
+      const element = this.elements.get(componentId);
+      if (element) {
+        element.remove();
+        this.elements.delete(componentId);
+        this.components.delete(componentId);
+      }
+    }
+  }
+
   getComponent(id: string): RichComponent | undefined {
     return this.components.get(id);
   }
