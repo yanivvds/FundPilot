@@ -1,5 +1,5 @@
 import { LitElement, html, css } from 'lit';
-import { customElement, property } from 'lit/decorators.js';
+import { customElement, property, state } from 'lit/decorators.js';
 import { vannaDesignTokens } from '../styles/vanna-design-tokens.js';
 
 const AGENT_NAME = 'Finn';
@@ -198,6 +198,124 @@ export class VannaMessage extends LitElement {
           max-width: 100%;
         }
       }
+
+      /* ---- User bubble wrapper + action row ---- */
+      .user-bubble-wrapper {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 4px;
+      }
+
+      .message-actions {
+        display: flex;
+        gap: 2px;
+        opacity: 0;
+        transition: opacity var(--vanna-duration-150) ease;
+      }
+
+      .message-wrapper.user:hover .message-actions {
+        opacity: 1;
+      }
+
+      .action-btn {
+        width: 28px;
+        height: 28px;
+        border: none;
+        background: transparent;
+        color: var(--vanna-foreground-dimmer);
+        cursor: pointer;
+        border-radius: 5px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+        transition: background var(--vanna-duration-150) ease, color var(--vanna-duration-150) ease;
+      }
+
+      .action-btn:hover {
+        background: var(--vanna-background-higher);
+        color: var(--vanna-foreground-default);
+      }
+
+      :host([theme="dark"]) .action-btn:hover {
+        background: var(--vanna-background-highest);
+      }
+
+      /* Edit mode */
+      .message.user.is-editing {
+        box-shadow: 0 0 0 2px #F0A500;
+        transition: box-shadow var(--vanna-duration-150) ease;
+      }
+
+      .edit-textarea {
+        width: 100%;
+        border: none;
+        background: transparent;
+        color: white;
+        font-size: 15px;
+        font-family: var(--vanna-font-family-default);
+        line-height: 1.6;
+        resize: none;
+        padding: 0;
+        margin: 0;
+        outline: none;
+        min-height: 0;
+        height: auto;
+        overflow: hidden;
+        display: block;
+        box-sizing: border-box;
+        caret-color: #F0A500;
+      }
+
+      .edit-hint {
+        font-size: 11px;
+        color: rgba(255,255,255,0.35);
+        margin-top: 6px;
+        text-align: right;
+        user-select: none;
+      }
+
+      .edit-actions {
+        display: flex;
+        gap: 6px;
+        justify-content: flex-end;
+        align-items: center;
+        margin-top: 4px;
+      }
+
+      .edit-action-btn {
+        padding: 5px 14px;
+        border-radius: 999px;
+        border: none;
+        font-size: 12px;
+        font-weight: 500;
+        font-family: var(--vanna-font-family-default);
+        cursor: pointer;
+        line-height: 1.4;
+        transition: background var(--vanna-duration-150) ease, opacity var(--vanna-duration-150) ease;
+      }
+
+      .edit-action-btn.send {
+        background: #F0A500;
+        color: #141218;
+        font-weight: 600;
+      }
+
+      .edit-action-btn.send:hover {
+        background: #d4910a;
+      }
+
+      .edit-action-btn.cancel {
+        background: transparent;
+        color: rgba(255,255,255,0.55);
+        border: 1px solid rgba(255,255,255,0.18);
+      }
+
+      .edit-action-btn.cancel:hover {
+        color: rgba(255,255,255,0.85);
+        border-color: rgba(255,255,255,0.35);
+      }
     `
   ];
 
@@ -207,8 +325,68 @@ export class VannaMessage extends LitElement {
   @property({ reflect: true }) theme = 'light';
   @property() senderLabel = '';
 
+  @state() private _isEditing = false;
+  @state() private _editContent = '';
+  @state() private _copied = false;
+
   private formatTimestamp(ts: number): string {
     return new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
+
+  private async _copyMessage() {
+    try {
+      await navigator.clipboard.writeText(this.content);
+      this._copied = true;
+      setTimeout(() => { this._copied = false; }, 1800);
+    } catch (_) {}
+  }
+
+  private _startEdit() {
+    this._editContent = this.content;
+    this._isEditing = true;
+    this.updateComplete.then(() => {
+      const textarea = this.shadowRoot?.querySelector('.edit-textarea') as HTMLTextAreaElement;
+      if (textarea) {
+        textarea.style.height = '0';
+        textarea.style.height = textarea.scrollHeight + 'px';
+        textarea.focus();
+        textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+      }
+    });
+  }
+
+  private _cancelEdit() {
+    this._isEditing = false;
+  }
+
+  private _onEditInput(e: Event) {
+    const textarea = e.target as HTMLTextAreaElement;
+    this._editContent = textarea.value;
+    // Auto-resize
+    textarea.style.height = '0';
+    textarea.style.height = textarea.scrollHeight + 'px';
+  }
+
+  private _onEditKeydown(e: KeyboardEvent) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      this._confirmEdit();
+    } else if (e.key === 'Escape') {
+      this._cancelEdit();
+    }
+  }
+
+  private _confirmEdit() {
+    if (!this._editContent.trim()) return;
+    this.dispatchEvent(new CustomEvent('message-resend', {
+      detail: {
+        content: this._editContent.trim(),
+        componentId: this.dataset.componentId
+      },
+      bubbles: true,
+      composed: true
+    }));
+    this._isEditing = false;
   }
 
   render() {
@@ -227,9 +405,63 @@ export class VannaMessage extends LitElement {
           }
           <span class="meta-time">${this.formatTimestamp(this.timestamp)}</span>
         </div>
-        <div class="message ${this.type}">
-          <div class="message-content">${this.content}</div>
-        </div>
+        ${this.type === 'user' ? html`
+          <div class="user-bubble-wrapper">
+            <div class="message user ${this._isEditing ? 'is-editing' : ''}">
+              ${this._isEditing ? html`
+                <textarea
+                  class="edit-textarea"
+                  .value=${this._editContent}
+                  @input=${this._onEditInput}
+                  @keydown=${this._onEditKeydown}
+                ></textarea>
+                <div class="edit-hint">↵ sturen &nbsp;·&nbsp; Esc annuleer</div>
+              ` : html`
+                <div class="message-content">${this.content}</div>
+              `}
+            </div>
+            ${this._isEditing ? html`
+              <div class="edit-actions">
+                <button class="edit-action-btn cancel" @click=${this._cancelEdit}>Annuleer</button>
+                <button class="action-btn" @click=${this._copyMessage} title="Kopieer" aria-label="Copy message" style="opacity:1">
+                  ${this._copied ? html`
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
+                    </svg>
+                  ` : html`
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M16 1H4C3 1 2 2 2 3v14h2V3h12V1zm3 4H8C7 5 6 6 6 7v14c0 1 1 2 2 2h11c1 0 2-1 2-2V7c0-1-1-2-2-2zm0 16H8V7h11v14z"/>
+                    </svg>
+                  `}
+                </button>
+                <button class="edit-action-btn send" @click=${this._confirmEdit}>Opnieuw sturen</button>
+              </div>
+            ` : html`
+              <div class="message-actions">
+                <button class="action-btn" @click=${this._copyMessage} title="Kopieer" aria-label="Copy message">
+                  ${this._copied ? html`
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
+                    </svg>
+                  ` : html`
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M16 1H4C3 1 2 2 2 3v14h2V3h12V1zm3 4H8C7 5 6 6 6 7v14c0 1 1 2 2 2h11c1 0 2-1 2-2V7c0-1-1-2-2-2zm0 16H8V7h11v14z"/>
+                    </svg>
+                  `}
+                </button>
+                <button class="action-btn" @click=${this._startEdit} title="Bewerk bericht" aria-label="Edit message">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+                  </svg>
+                </button>
+              </div>
+            `}
+          </div>
+        ` : html`
+          <div class="message assistant">
+            <div class="message-content">${this.content}</div>
+          </div>
+        `}
       </div>
     `;
   }

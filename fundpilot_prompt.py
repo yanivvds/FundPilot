@@ -356,6 +356,7 @@ class FundPilotSystemPromptBuilder(SystemPromptBuilder):
         has_search = "search_saved_correct_tool_uses" in tool_names
         has_save = "save_question_tool_args" in tool_names
         has_text_memory = "save_text_memory" in tool_names
+        has_web_search = "web_search" in tool_names
 
         parts = [
             IDENTITY_AND_WORKFLOW.format(today_date=today_date),
@@ -372,7 +373,7 @@ class FundPilotSystemPromptBuilder(SystemPromptBuilder):
         if tools:
             parts.append(f"## Tools\n{', '.join(tool_names)}")
 
-        if has_search or has_save or has_text_memory:
+        if has_search or has_save or has_text_memory or has_web_search:
             mem = ["## Geheugen"]
             if has_search:
                 mem.append(
@@ -386,6 +387,11 @@ class FundPilotSystemPromptBuilder(SystemPromptBuilder):
             if has_text_memory:
                 mem.append(
                     "- Gebruik `save_text_memory` voor duurzame domeinkennis, definities en interpretaties."
+                )
+            if has_web_search:
+                mem.append(
+                    "- Gebruik `web_search` voor actuele informatie buiten de databases: nieuws, wet- en regelgeving, marktdata. "
+                    "Gebruik het niet voor vragen die via SQL beantwoord kunnen worden."
                 )
             parts.append("\n".join(mem))
 

@@ -33,6 +33,7 @@ from fundpilot_tools import (
     GetTableSchemaInfoTool,
     SearchTablesAcrossDatabasesTool,
     ValidateProjectTablesForColumnsTool,
+    WebSearchTool,
 )
 logger = logging.getLogger(__name__)
 
@@ -245,9 +246,13 @@ def create_fundpilot_agent() -> Agent:
     )
 
     tools.register_local_tool(
-    ValidateProjectTablesForColumnsTool(),
-    access_groups=["admin", "user"],
-)
+        ValidateProjectTablesForColumnsTool(),
+        access_groups=["admin", "user"],
+    )
+    tools.register_local_tool(
+        WebSearchTool(),
+        access_groups=["admin", "user"],
+    )
 
     from vanna.core.agent.config import AgentConfig
 

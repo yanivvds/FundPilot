@@ -762,6 +762,16 @@ export class VannaChat extends LitElement {
       });
     }
 
+    // Listen for edit-and-resend from user message bubbles
+    this.addEventListener('message-resend', ((e: CustomEvent) => {
+      const { content, componentId } = e.detail;
+      if (componentId && this.componentManager) {
+        this.componentManager.removeFromComponent(componentId);
+        this.updateEmptyState();
+      }
+      this.sendMessage(content);
+    }) as EventListener);
+
     // Set initial window state from startingState property
     if (this.startingState !== 'normal') {
       this._windowState = this.startingState;
