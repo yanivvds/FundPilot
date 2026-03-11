@@ -156,6 +156,10 @@ export class VannaChat extends LitElement {
         min-height: 0;
       }
 
+      :host([theme="dark"]) .chat-main {
+        background: var(--vanna-background-root);
+      }
+
       .chat-layout.compact .chat-main {
         border-right: none;
       }
@@ -494,6 +498,77 @@ export class VannaChat extends LitElement {
         color: rgba(69, 64, 90, 0.55);
       }
 
+      .web-search-btn {
+        width: 36px;
+        height: 36px;
+        border-radius: 2px;
+        border: none;
+        background: transparent;
+        color: rgba(69, 64, 90, 0.35);
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: color var(--vanna-duration-150) ease, background var(--vanna-duration-150) ease;
+        position: relative;
+        flex-shrink: 0;
+      }
+
+      .web-search-btn.active {
+        color: #F0A500;
+      }
+
+      .web-search-btn:hover {
+        color: #F0A500;
+        background: rgba(240, 165, 0, 0.08);
+      }
+
+      .web-search-btn svg {
+        width: 16px;
+        height: 16px;
+      }
+
+      .web-search-btn::after {
+        content: attr(data-tooltip);
+        position: absolute;
+        bottom: calc(100% + 6px);
+        left: 50%;
+        transform: translateX(-50%);
+        background: #141218;
+        color: #E8E4DC;
+        font-size: 11px;
+        font-family: var(--vanna-font-family-default);
+        padding: 3px 8px;
+        border-radius: 3px;
+        white-space: nowrap;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity var(--vanna-duration-150) ease;
+        z-index: 10;
+      }
+
+      .web-search-btn:hover::after {
+        opacity: 1;
+      }
+
+      :host([theme="dark"]) .web-search-btn {
+        color: rgba(150, 144, 168, 0.4);
+      }
+
+      :host([theme="dark"]) .web-search-btn.active {
+        color: #F0A500;
+      }
+
+      :host([theme="dark"]) .web-search-btn:hover {
+        color: #F0A500;
+        background: rgba(240, 165, 0, 0.1);
+      }
+
+      :host([theme="dark"]) .web-search-btn::after {
+        background: #2A2636;
+        color: #E8E4DC;
+      }
+
       .send-button {
         width: 44px;
         height: 44px;
@@ -533,14 +608,183 @@ export class VannaChat extends LitElement {
       .sidebar {
         background: #FFFFFF;
         border-left: 1px solid #E2DFD8;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        min-height: 0;
+      }
+
+      .sidebar-scroll {
+        flex: 1;
+        overflow-y: auto;
+        overflow-x: hidden;
         padding: var(--vanna-space-5);
         display: flex;
         flex-direction: column;
         gap: var(--vanna-space-4);
-        overflow-y: auto;
-        overflow-x: hidden;
         min-height: 0;
       }
+
+      .sidebar-scroll::-webkit-scrollbar {
+        width: 6px;
+      }
+
+      .sidebar-scroll::-webkit-scrollbar-track {
+        background: transparent;
+      }
+
+      .sidebar-scroll::-webkit-scrollbar-thumb {
+        background: var(--vanna-outline-default);
+        border-radius: var(--vanna-border-radius-full);
+      }
+
+      .sidebar-section {
+        display: flex;
+        flex-direction: column;
+        gap: var(--vanna-space-2);
+      }
+
+      .sidebar-section-title {
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: #7A7590;
+        padding-bottom: var(--vanna-space-1);
+        border-bottom: 1px solid #E2DFD8;
+        margin-bottom: var(--vanna-space-1);
+      }
+
+      :host([theme="dark"]) .sidebar-section-title {
+        color: #5A5570;
+        border-bottom-color: #2A2636;
+      }
+
+      .suggested-prompt-btn {
+        width: 100%;
+        text-align: left;
+        background: #F5F3EF;
+        border: 1px solid #E2DFD8;
+        border-radius: 4px;
+        padding: var(--vanna-space-3);
+        font-size: 13px;
+        font-family: var(--vanna-font-family-default);
+        color: #45405A;
+        cursor: pointer;
+        transition: background var(--vanna-duration-150) ease, border-color var(--vanna-duration-150) ease, color var(--vanna-duration-150) ease;
+        line-height: 1.4;
+        display: flex;
+        align-items: flex-start;
+        gap: var(--vanna-space-2);
+      }
+
+      .suggested-prompt-btn::before {
+        content: '↗';
+        flex-shrink: 0;
+        color: #F0A500;
+        font-size: 12px;
+        margin-top: 1px;
+      }
+
+      .suggested-prompt-btn:hover {
+        background: #EDE9E2;
+        border-color: #C8C3BB;
+        color: #141218;
+      }
+
+      .suggested-prompt-btn:active {
+        background: #E3DDD6;
+      }
+
+      :host([theme="dark"]) .suggested-prompt-btn {
+        background: #2A2636;
+        border-color: #3A3547;
+        color: #C4BFD8;
+      }
+
+      :host([theme="dark"]) .suggested-prompt-btn:hover {
+        background: #3A3547;
+        border-color: #4A455A;
+        color: #E8E4DC;
+      }
+
+      .theme-toggle-btn {
+        width: 28px;
+        height: 28px;
+        border-radius: 2px;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        background: transparent;
+        color: rgba(255, 255, 255, 0.6);
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: all var(--vanna-duration-150) ease;
+      }
+
+      .theme-toggle-btn:hover {
+        background: rgba(255, 255, 255, 0.1);
+        color: #F0A500;
+        border-color: rgba(240, 165, 0, 0.3);
+      }
+
+      .theme-toggle-btn svg {
+        width: 15px;
+        height: 15px;
+      }
+
+      .sidebar-footer {
+        flex-shrink: 0;
+        padding: var(--vanna-space-3) var(--vanna-space-5);
+        border-top: 1px solid #E2DFD8;
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+      }
+
+      :host([theme="dark"]) .sidebar-footer {
+        border-top-color: #2A2636;
+      }
+
+      .sidebar-theme-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: transparent;
+        border: 1px solid #E2DFD8;
+        border-radius: 4px;
+        width: 28px;
+        height: 28px;
+        padding: 0;
+        color: #7A7590;
+        cursor: pointer;
+        transition: all var(--vanna-duration-150) ease;
+      }
+
+      .sidebar-theme-btn svg {
+        width: 14px;
+        height: 14px;
+        flex-shrink: 0;
+      }
+
+      .sidebar-theme-btn:hover {
+        background: #F5F3EF;
+        border-color: #C8C3BB;
+        color: #141218;
+      }
+
+      :host([theme="dark"]) .sidebar-theme-btn {
+        border-color: #3A3547;
+        color: #5A5570;
+      }
+
+      :host([theme="dark"]) .sidebar-theme-btn:hover {
+        background: #2A2636;
+        border-color: #4A455A;
+        color: #C4BFD8;
+      }
+
 
       .sidebar::-webkit-scrollbar {
         width: 6px;
@@ -607,6 +851,15 @@ export class VannaChat extends LitElement {
         font-size: 14px;
         color: #7A7590;
         font-weight: 400;
+      }
+
+      :host([theme="dark"]) .empty-state-subtitle {
+        color: #9690A8;
+      }
+
+      :host([theme="dark"]) .empty-state-icon {
+        opacity: 0.55;
+        filter: brightness(1.15) saturate(0.85);
       }
 
       @media (max-width: 880px) {
@@ -681,11 +934,14 @@ export class VannaChat extends LitElement {
   @property() subtitle = '';
   @property({ attribute: 'user-email' }) userEmail = '';
   @property() startingState: 'normal' | 'maximized' | 'minimized' = 'normal';
+  @property({ attribute: 'suggested-prompts' }) suggestedPromptsJson = '';
 
   @state() private currentMessage = '';
+  @state() private _lastClickedPrompt = '';
   @state() private status: 'idle' | 'working' | 'error' | 'success' = 'idle';
   @state() private statusMessage = '';
   @state() private statusDetail = '';
+  @state() private webSearchEnabled = true;
   private _windowState: 'normal' | 'maximized' | 'minimized' = 'normal';
 
   @property({ reflect: false })
@@ -770,6 +1026,11 @@ export class VannaChat extends LitElement {
         this.updateEmptyState();
       }
       this.sendMessage(content);
+    }) as EventListener);
+
+    // Listen for quick-reply button selections from assistant message bubbles
+    this.addEventListener('quick-reply-selected', ((e: CustomEvent) => {
+      this.sendMessage(e.detail.option);
     }) as EventListener);
 
     // Set initial window state from startingState property
@@ -930,7 +1191,7 @@ export class VannaChat extends LitElement {
         message: messageText,
         conversation_id: this.conversationId,
         request_id: this.generateId(),
-        metadata: {}
+        metadata: { web_search_enabled: this.webSearchEnabled }
       };
 
       // Stream the response
@@ -1172,6 +1433,40 @@ export class VannaChat extends LitElement {
     }
   }
 
+  private get _suggestedPrompts(): string[] {
+    if (this.suggestedPromptsJson) {
+      try {
+        return JSON.parse(this.suggestedPromptsJson);
+      } catch {
+        // fall through to defaults
+      }
+    }
+    return [
+      'Wat is de werkelijke kostprijs per duurzame donor, inclusief uitval en chargebacks, uitgesplitst per kanaal?',
+      'Welke leveranciers of campagnes leveren structureel de hoogste retentie na 6 maanden op?',
+      'Welke campagnes of importkanalen hebben de meeste groeiruimte op basis van conversie én gemiddeld donatiebedrag?',
+    ];
+  }
+
+  private _handleSuggestedPrompt(prompt: string) {
+    this._lastClickedPrompt = prompt;
+    this.sendMessage(prompt);
+    setTimeout(() => { this._lastClickedPrompt = ''; }, 1500);
+  }
+
+  private _toggleTheme() {
+    this.theme = this.theme === 'dark' ? 'light' : 'dark';
+    this.dispatchEvent(new CustomEvent('theme-changed', {
+      detail: { theme: this.theme },
+      bubbles: true,
+      composed: true
+    }));
+  }
+
+  private _toggleWebSearch() {
+    this.webSearchEnabled = !this.webSearchEnabled;
+  }
+
   private generateId(): string {
     return `${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
   }
@@ -1341,10 +1636,12 @@ export class VannaChat extends LitElement {
             <!-- Empty state - shown when no components exist -->
             <div class="empty-state" id="empty-state">
               <div class="empty-state-icon">
-                <img src="/img/empty-first-query.svg" alt="" aria-hidden="true">
+                <img
+                  src=${this.status === 'error' ? '/img/empty-error.svg' : '/img/empty-first-query.svg'}
+                  alt="" aria-hidden="true">
               </div>
-              <div class="empty-state-text">Stel een vraag</div>
-              <div class="empty-state-subtitle">Typ uw vraag hieronder om te beginnen</div>
+              <div class="empty-state-text">${this.status === 'error' ? 'Er is een fout opgetreden' : 'Stel een vraag'}</div>
+              <div class="empty-state-subtitle">${this.status === 'error' ? 'Probeer het opnieuw of stel een andere vraag' : 'Typ uw vraag hieronder om te beginnen'}</div>
             </div>
 
             <!-- Rich Components Container - all content renders here via ComponentManager -->
@@ -1370,6 +1667,20 @@ export class VannaChat extends LitElement {
                 rows="1"
               ></textarea>
               <button
+                class="web-search-btn ${this.webSearchEnabled ? 'active' : ''}"
+                type="button"
+                data-tooltip="${this.webSearchEnabled ? 'Webzoeken aan' : 'Webzoeken uit'}"
+                aria-label="${this.webSearchEnabled ? 'Webzoeken uitschakelen' : 'Webzoeken inschakelen'}"
+                aria-pressed="${this.webSearchEnabled}"
+                @click=${this._toggleWebSearch}
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"/>
+                  <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+                  <line x1="2" y1="12" x2="22" y2="12"/>
+                </svg>
+              </button>
+              <button
                 class="send-button"
                 type="button"
                 aria-label="Send message"
@@ -1386,7 +1697,31 @@ export class VannaChat extends LitElement {
 
         ${this.showProgress ? html`
           <div class="sidebar">
-            <vanna-progress-tracker theme=${this.theme}></vanna-progress-tracker>
+            <div class="sidebar-scroll">
+              <vanna-progress-tracker theme=${this.theme}></vanna-progress-tracker>
+              ${this._suggestedPrompts.length > 0 ? html`
+                <div class="sidebar-section">
+                  <div class="sidebar-section-title">Voorgestelde vragen</div>
+                  ${this._suggestedPrompts.map(prompt => html`
+                    <button
+                      class="suggested-prompt-btn"
+                      style=${this._lastClickedPrompt === prompt ? 'border-color:#F0A500;background:#FFF8E6;' : ''}
+                      @click=${() => this._handleSuggestedPrompt(prompt)}>
+                      ${prompt}
+                    </button>
+                  `)}
+                </div>
+              ` : ''}
+            </div>
+            <div class="sidebar-footer">
+              <button class="sidebar-theme-btn" @click=${this._toggleTheme} title=${this.theme === 'dark' ? 'Licht thema' : 'Donker thema'}>
+                ${this.theme === 'dark' ? html`
+                  <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 7a5 5 0 1 0 0 10A5 5 0 0 0 12 7zm0-5a1 1 0 0 1 1 1v1a1 1 0 0 1-2 0V3a1 1 0 0 1 1-1zm0 17a1 1 0 0 1 1 1v1a1 1 0 0 1-2 0v-1a1 1 0 0 1 1-1zM4.22 4.22a1 1 0 0 1 1.42 0l.7.7a1 1 0 0 1-1.42 1.42l-.7-.7a1 1 0 0 1 0-1.42zm13.44 13.44a1 1 0 0 1 1.42 0l.7.7a1 1 0 0 1-1.42 1.42l-.7-.7a1 1 0 0 1 0-1.42zM3 12a1 1 0 0 1 1-1h1a1 1 0 0 1 0 2H4a1 1 0 0 1-1-1zm16 0a1 1 0 0 1 1-1h1a1 1 0 0 1 0 2h-1a1 1 0 0 1-1-1zM4.22 19.78a1 1 0 0 1 0-1.42l.7-.7a1 1 0 0 1 1.42 1.42l-.7.7a1 1 0 0 1-1.42 0zm13.44-13.44a1 1 0 0 1 0-1.42l.7-.7a1 1 0 0 1 1.42 1.42l-.7.7a1 1 0 0 1-1.42 0z"/></svg>
+                ` : html`
+                  <svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+                `}
+              </button>
+            </div>
           </div>
         ` : ''}
       </div>

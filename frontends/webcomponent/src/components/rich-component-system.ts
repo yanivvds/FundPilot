@@ -807,13 +807,20 @@ export class TextComponentRenderer extends BaseComponentRenderer {
     container.className = 'rich-component rich-text';
 
     const {
-      content,
       markdown = false,
       code_language,
       font_size,
       font_weight,
       text_align
     } = component.data;
+
+    // Extract [KNOPPEN: ...] tag before rendering
+    const rawContent: string = component.data.content || '';
+    const knappenMatch = rawContent.match(/\[KNOPPEN:\s*([^\]]+)\]\s*$/);
+    const cleanContent = knappenMatch ? rawContent.slice(0, knappenMatch.index).trimEnd() : rawContent;
+    const quickOptions: string[] = knappenMatch
+      ? knappenMatch[1].split('|').map((o: string) => o.trim()).filter(Boolean)
+      : [];
 
     // Apply text styling
     let textStyle = '';
@@ -824,21 +831,44 @@ export class TextComponentRenderer extends BaseComponentRenderer {
     if (code_language) {
       // Code block
       container.innerHTML = `
-        <pre class="text-code" style="${textStyle}"><code class="language-${code_language}">${this.escapeHtml(content)}</code></pre>
+        <pre class="text-code" style="${textStyle}"><code class="language-${code_language}">${this.escapeHtml(cleanContent)}</code></pre>
       `;
     } else if (markdown) {
       // Markdown text (simple implementation)
       container.innerHTML = `
-        <div class="text-markdown" style="${textStyle}">${this.renderMarkdown(content)}</div>
+        <div class="text-markdown" style="${textStyle}">${this.renderMarkdown(cleanContent)}</div>
       `;
     } else {
       // Plain text
       container.innerHTML = `
-        <div class="text-content" style="${textStyle}">${this.escapeHtml(content)}</div>
+        <div class="text-content" style="${textStyle}">${this.escapeHtml(cleanContent)}</div>
       `;
     }
 
-    (wrapper.querySelector('.agent-message-body') as HTMLElement).appendChild(container);
+    const messageBody = wrapper.querySelector('.agent-message-body') as HTMLElement;
+    messageBody.appendChild(container);
+
+    // Render quick reply buttons if options were found
+    if (quickOptions.length > 0) {
+      const repliesDiv = document.createElement('div');
+      repliesDiv.className = 'quick-replies';
+      quickOptions.forEach((opt: string) => {
+        const btn = document.createElement('button');
+        btn.className = 'quick-reply-btn';
+        btn.textContent = opt;
+        btn.addEventListener('click', () => {
+          repliesDiv.style.display = 'none';
+          wrapper.dispatchEvent(new CustomEvent('quick-reply-selected', {
+            detail: { option: opt },
+            bubbles: true,
+            composed: true
+          }));
+        });
+        repliesDiv.appendChild(btn);
+      });
+      messageBody.appendChild(repliesDiv);
+    }
+
     return wrapper;
   }
 

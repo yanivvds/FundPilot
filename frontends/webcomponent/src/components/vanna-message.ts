@@ -199,6 +199,56 @@ export class VannaMessage extends LitElement {
         }
       }
 
+      /* Quick reply buttons */
+      .quick-replies {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 10px;
+        padding-top: 10px;
+        border-top: 1px solid var(--vanna-outline-dimmer);
+      }
+
+      .quick-reply-btn {
+        padding: 6px 14px;
+        border-radius: 2px;
+        border: 1.5px solid #E2DFD8;
+        background: #FAFAF8;
+        color: #141218;
+        font-size: 13px;
+        font-weight: 500;
+        font-family: var(--vanna-font-family-default);
+        cursor: pointer;
+        transition: background var(--vanna-duration-150) ease, border-color var(--vanna-duration-150) ease, color var(--vanna-duration-150) ease, transform var(--vanna-duration-100) ease;
+        white-space: nowrap;
+        line-height: 1.4;
+      }
+
+      .quick-reply-btn:hover {
+        background: #F0A500;
+        border-color: #F0A500;
+        color: #141218;
+        transform: translateY(-1px);
+      }
+
+      .quick-reply-btn:active {
+        transform: scale(0.97);
+        background: #d4910a;
+        border-color: #d4910a;
+      }
+
+      :host([theme="dark"]) .quick-reply-btn {
+        background: #2A2636;
+        border-color: #3A3547;
+        color: #E8E4DC;
+      }
+
+      :host([theme="dark"]) .quick-reply-btn:hover {
+        background: #F0A500;
+        border-color: #F0A500;
+        color: #141218;
+      }
+
       /* ---- User bubble wrapper + action row ---- */
       .user-bubble-wrapper {
         display: flex;
@@ -328,6 +378,7 @@ export class VannaMessage extends LitElement {
   @state() private _isEditing = false;
   @state() private _editContent = '';
   @state() private _copied = false;
+  @state() private _optionsUsed = false;
 
   private formatTimestamp(ts: number): string {
     return new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -387,6 +438,23 @@ export class VannaMessage extends LitElement {
       composed: true
     }));
     this._isEditing = false;
+  }
+
+  private _parseContent(): { text: string; options: string[] } {
+    const match = this.content.match(/\[KNOPPEN:\s*([^\]]+)\]\s*$/);
+    if (!match) return { text: this.content, options: [] };
+    const options = match[1].split('|').map(o => o.trim()).filter(Boolean);
+    const text = this.content.slice(0, match.index).trimEnd();
+    return { text, options };
+  }
+
+  private _onQuickReply(option: string) {
+    this._optionsUsed = true;
+    this.dispatchEvent(new CustomEvent('quick-reply-selected', {
+      detail: { option },
+      bubbles: true,
+      composed: true
+    }));
   }
 
   render() {
@@ -458,9 +526,21 @@ export class VannaMessage extends LitElement {
             `}
           </div>
         ` : html`
-          <div class="message assistant">
-            <div class="message-content">${this.content}</div>
-          </div>
+          ${(() => {
+            const { text, options } = this._parseContent();
+            return html`
+              <div class="message assistant">
+                <div class="message-content">${text}</div>
+                ${options.length > 0 && !this._optionsUsed ? html`
+                  <div class="quick-replies">
+                    ${options.map(opt => html`
+                      <button class="quick-reply-btn" @click=${() => this._onQuickReply(opt)}>${opt}</button>
+                    `)}
+                  </div>
+                ` : ''}
+              </div>
+            `;
+          })()}
         `}
       </div>
     `;

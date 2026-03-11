@@ -62,6 +62,10 @@ DATABASES = {
         "env_key": "MSSQL_CONN_STR_PROJECT_ARCHIVE",
         "description": "Archief van CWEProjectData — historische klant- en projectgegevens.",
     },
+    "ProjectInfoDB": {
+        "env_key": "MSSQL_CONN_STR_PROJECT_DESCRIPTIONS",
+        "description": "AI-verrijkte projectinformatie: projectcode, bedrijfsnaam, projecttype, AI-bedrijfsomschrijving, typische donor, categorieën en betrouwbaarheidsscore.",
+    },
 }
 
 
