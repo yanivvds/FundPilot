@@ -14,6 +14,7 @@ import asyncio
 import logging
 import os
 from collections import defaultdict
+from html.parser import HTMLParser
 from typing import Optional, Type
 
 import pandas as pd
@@ -37,6 +38,12 @@ ALLOWED_DATABASES = {
     "CWESystemConfig_Archive",
     "CWESystemData_Archive",
     "CWEProjectData_Archive",
+    "ProjectInfoDB",
+}
+
+# Databases that have a dedicated connection string env var
+_DB_CONN_ENV_MAP = {
+    "ProjectInfoDB": "MSSQL_CONN_STR_PROJECT_DESCRIPTIONS",
 }
 
 
@@ -47,7 +54,8 @@ class GetSchemaInfoArgs(BaseModel):
         description=(
             "Naam van de database om te inspecteren. "
             "Keuze uit: CWESystemConfig, CWESystemData, CWEProjectData, "
-            "CWESystemConfig_Archive, CWESystemData_Archive, CWEProjectData_Archive."
+            "CWESystemConfig_Archive, CWESystemData_Archive, CWEProjectData_Archive, "
+            "ProjectInfoDB."
         )
     )
     table_name: Optional[str] = Field(
@@ -66,7 +74,7 @@ class SearchTablesArgs(BaseModel):
     search_term: str = Field(
         description=(
             "Zoekterm om tabellen of kolommen te vinden over alle databases. "
-            "Gebruik dit voor concepten zoals project, result, optout, consent, agenda, import, phone of klantcode."
+            "Gebruik dit voor concepten zoals project, result, optout, consent, agenda, import, phone, klantcode of description."
         )
     )
 
@@ -92,6 +100,13 @@ def _get_connection(database_name: str):
     """Create a pyodbc connection to the specified database."""
     import re as _re
     import pyodbc
+
+    # Use a dedicated connection string if one is configured for this database
+    dedicated_env = _DB_CONN_ENV_MAP.get(database_name)
+    if dedicated_env:
+        dedicated_conn_str = os.getenv(dedicated_env, "").strip().strip('"').strip("'")
+        if dedicated_conn_str:
+            return pyodbc.connect(dedicated_conn_str, timeout=15)
 
     base_conn_str = os.getenv("MSSQL_CONN_STR", "")
     if not base_conn_str:
@@ -699,6 +714,37 @@ class ValidateProjectTablesForColumnsTool(Tool[ValidateProjectTablesArgs]):
 # ---------------------------------------------------------------------------
 
 
+class _HtmlTextExtractor(HTMLParser):
+    """Extract visible text from HTML, skipping script/style/nav tags."""
+
+    _SKIP = {"script", "style", "nav", "footer", "header", "aside", "noscript", "meta", "link"}
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._parts: list[str] = []
+        self._depth: int = 0
+
+    def handle_starttag(self, tag: str, attrs: list) -> None:
+        if tag.lower() in self._SKIP:
+            self._depth += 1
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag.lower() in self._SKIP and self._depth > 0:
+            self._depth -= 1
+
+    def handle_data(self, data: str) -> None:
+        if self._depth == 0:
+            stripped = data.strip()
+            if stripped:
+                self._parts.append(stripped)
+
+    def get_text(self, max_chars: int = 1500) -> str:
+        import re
+        text = " ".join(self._parts)
+        text = re.sub(r"\s+", " ", text).strip()
+        return text[:max_chars]
+
+
 class WebSearchArgs(BaseModel):
     """Arguments for searching the web via DuckDuckGo."""
 
@@ -729,12 +775,49 @@ class WebSearchTool(Tool[WebSearchArgs]):
     def get_args_schema(self) -> Type[WebSearchArgs]:
         return WebSearchArgs
 
+    async def _fetch_page_text(self, url: str) -> str:
+        """Fetch a URL and extract visible text. Returns empty string on any failure."""
+        import httpx
+        try:
+            async with httpx.AsyncClient(
+                timeout=8.0,
+                follow_redirects=True,
+                headers={"User-Agent": "Mozilla/5.0 (compatible; FundPilot/1.0; +https://fundpilot.nl)"},
+            ) as client:
+                resp = await client.get(url)
+                if resp.status_code != 200:
+                    return ""
+                extractor = _HtmlTextExtractor()
+                extractor.feed(resp.text)
+                return extractor.get_text()
+        except Exception:
+            return ""
+
     async def execute(self, context: ToolContext, args: WebSearchArgs) -> ToolResult:
-        from duckduckgo_search import DDGS
+        if not context.metadata.get("web_search_enabled", True):
+            return ToolResult(
+                success=False,
+                result_for_llm="Web search is uitgeschakeld door de gebruiker.",
+            )
+
+        from ddgs import DDGS
 
         def _search() -> list[dict]:
-            with DDGS() as ddgs:
-                return list(ddgs.text(args.query, max_results=5))
+            import time, random
+            last_exc: Exception | None = None
+            for attempt in range(3):
+                if attempt:
+                    time.sleep(1.5 + random.random())
+                try:
+                    results = list(DDGS().text(args.query, max_results=5))
+                    if results:
+                        return results
+                except Exception as exc:
+                    last_exc = exc
+                    logger.warning("Web search attempt %d failed: %s", attempt + 1, exc)
+            if last_exc:
+                raise last_exc
+            return []
 
         try:
             results = await asyncio.to_thread(_search)
@@ -771,8 +854,19 @@ class WebSearchTool(Tool[WebSearchArgs]):
                 ),
             )
 
+        top_urls = [r.get("href", "") for r in results[:3] if r.get("href")]
+        fetched = await asyncio.gather(*[self._fetch_page_text(u) for u in top_urls])
+        url_to_content = dict(zip(top_urls, fetched))
+
         text = "\n\n".join(
-            f"**{r.get('title', '').strip()}**\n{r.get('body', '').strip()}\n{r.get('href', '')}"
+            "**{title}**\n{snippet}\nURL: {url}{content}".format(
+                title=r.get("title", "").strip(),
+                snippet=r.get("body", "").strip(),
+                url=r.get("href", ""),
+                content=f"\nPaginainhoud: {url_to_content.get(r.get('href',''), '')}"
+                if url_to_content.get(r.get("href", ""))
+                else "",
+            )
             for r in results
         )
 
@@ -783,7 +877,7 @@ class WebSearchTool(Tool[WebSearchArgs]):
                 rich_component=StatusCardComponent(
                     title="Webzoekresultaten",
                     status="success",
-                    description=f'{len(results)} resultaten voor: "{args.query}"',
+                    description=f'{len(results)} resultaten voor: "{args.query}" (paginainhoud opgehaald)',
                     icon="🌐",
                 ),
                 simple_component=SimpleTextComponent(

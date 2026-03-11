@@ -1827,6 +1827,50 @@ export const richComponentStyles = css`
     opacity: 0.4;
     filter: grayscale(50%);
   }
+
+  /* Quick reply option buttons */
+  .quick-replies {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(226, 223, 216, 0.7);
+  }
+
+  .quick-reply-btn {
+    padding: 7px 14px 7px 11px;
+    border-radius: 2px;
+    border: 1px solid #E2DFD8;
+    border-left: 3px solid #F0A500;
+    background: #FAFAF8;
+    color: #45405A;
+    font-size: 13px;
+    font-weight: 500;
+    font-family: inherit;
+    letter-spacing: 0.01em;
+    line-height: 1.4;
+    cursor: pointer;
+    transition: background 150ms ease, color 150ms ease, border-color 150ms ease, box-shadow 150ms ease;
+    white-space: nowrap;
+  }
+
+  .quick-reply-btn:hover {
+    background: #141218;
+    border-color: #141218;
+    border-left-color: #F0A500;
+    color: #FFFFFF;
+    box-shadow: 0 2px 8px rgba(20, 18, 24, 0.15);
+  }
+
+  .quick-reply-btn:active {
+    background: #2A2636;
+    border-color: #2A2636;
+    border-left-color: #F0A500;
+    color: #FFFFFF;
+    box-shadow: none;
+    transform: translateY(1px);
+  }
 `;
 
 export const richComponentStyleText = richComponentStyles.cssText;

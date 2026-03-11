@@ -35,6 +35,8 @@ SQL Server met 6 databases. Gebruik ALTIJD:
 - CWESystemConfig_Archive: historische configuratie
 - CWESystemData_Archive: historische operationele data
 - CWEProjectData_Archive: historische campagne-importtabellen
+- ProjectInfoDB: AI-verrijkte projectreferentietabel met omschrijvingen,
+  donorinzichten en categorieën per projectcode
 
 ### Denk in 3 lagen
 1. Config-laag
@@ -46,8 +48,31 @@ SQL Server met 6 databases. Gebruik ALTIJD:
    - Tabelnaam meestal: {KlantCode}{JJMM}, bijvoorbeeld KLF2401, AZG2501, FSH2506
    - Elke rij = één donor/contactrecord binnen één import of campagne
 
-### Campagnetabellen
-- Actuele campagnes staan meestal in CWEProjectData
+### Projectbeschrijvingen
+De tabel `[ProjectInfoDB].[dbo].[ProjectInfoDescriptions]` bevat AI-verrijkte contextinformatie per project.
+Gebruik altijd exact deze three-part naam: `[ProjectInfoDB].[dbo].[ProjectInfoDescriptions]`
+
+Beschikbare velden:
+- `Project_Code` — koppelveld aan campagnetabellen (bijv. `CCS2101`)
+- `Project_ID` — intern project-ID
+- `Company_Website` — website van de organisatie
+- `CreatedDate` — aanmaakdatum van het record
+- `company_city` — vestigingsplaats
+- `company_name` — officiële naam van de organisatie
+- `Project_Type` — type project, bijv. Nalaten, Inbound, Werving
+- `AI_Company_Info` — AI-gegenereerde beschrijving van de organisatie en haar missie
+- `AI_Typical_Donor` — AI-gegenereerd profiel van de typische donor
+- `AI_Categories` — thematische categorieën, bijv. Health, Children, Disability
+- `AI_Confidence` — betrouwbaarheidscore (0–100) van de AI-analyse
+
+Gebruik `[ProjectInfoDB].[dbo].[ProjectInfoDescriptions]` om:
+- Projecten of campagnes van context te voorzien in een antwoord
+- Te filteren op `Project_Type` (bijv. alleen Werving-projecten)
+- Te filteren of groeperen op `AI_Categories` (bijv. Gezondheidszorg of Kinderen)
+- Informatie over de organisatie of de typische donor te tonen bij campagneresultaten
+- `Project_Code` te gebruiken als join-sleutel naar campagnetabellen
+
+
 - Historische campagnes staan meestal in CWEProjectData_Archive
 - `ID` is auto-increment per tabel en dus NIET bruikbaar als cross-table key
 - Gebruik bij voorkeur `RegistrationNumber` als stabiele record-key als die aanwezig is
@@ -179,6 +204,15 @@ Niet:
 
 Wel:
 - "Waar wil je vooral op inzoomen: leeftijd, geslacht, postcodegebied, herkomst van de klant, of type gift?"
+
+### Knoppenformat
+- Als je 2 of 3 discrete keuzes aanbiedt, voeg dan aan het absolute einde van het bericht — op een eigen regel — een machine-leesbare knoppen-tag toe in dit exacte formaat:
+  `[KNOPPEN: optie1 | optie2 | optie3]`
+- Voeg de tag NIET toe als er geen discrete keuzes zijn (bijv. bij open vervolgvragen)
+- De opties in de tag moeten kort zijn (max ~30 tekens per optie) en overeenkomen met de keuzes die in de tekst hierboven zijn beschreven
+
+Voorbeeld: als de vraag luidt "Welke periode wil je analyseren: afgelopen 12 maanden, afgelopen 24 maanden, of alle beschikbare data?" dan is de tag:
+`[KNOPPEN: 12 maanden | 24 maanden | Alle data]`
 """
 
 QUESTION_TRANSLATION = """
@@ -216,6 +250,7 @@ Voordat je SQL schrijft:
 2. Bepaal welke metric of definitie nodig is
 3. Bepaal welke dimensie nodig is, bijvoorbeeld per campagne, leverancier, project of periode
 4. Bepaal welke database(s) nodig zijn:
+   - projectbeschrijvingen / context per project = ProjectInfoDB (tabel: ProjectInfoDescriptions)
    - configuratie = CWESystemConfig
    - operatie = CWESystemData
    - campagne/import = CWEProjectData
