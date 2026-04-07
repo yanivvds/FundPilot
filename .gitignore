@@ -21,6 +21,10 @@ milvus.db
 .milvus.db.lock
 /vanna_data
 /sql
+.venv/*
+
+# Generated build artifact - rebuilt on server start
+static/vanna-components.js
 
 # Frontend builds and dependencies
 frontends/**/node_modules/
@@ -32,3 +36,5 @@ logs/*
 logs/
 logs*/
 logs
+SETUP_GUIDE.md
+deploy/README.md

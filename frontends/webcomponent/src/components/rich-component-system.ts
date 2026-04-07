@@ -110,9 +110,22 @@ export class CardComponentRenderer extends BaseComponentRenderer {
       actions: component.data?.actions
     });
 
+    // Wrapper with agent meta header + body
+    const _cardTime = new Date(component.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const wrapper = document.createElement('div');
+    wrapper.className = 'agent-message-row';
+    wrapper.dataset.componentId = component.id;
+    wrapper.innerHTML = `
+      <div class="agent-meta">
+        <img class="agent-meta-icon" src="/img/app-icon-512.png" alt="" width="22" height="22">
+        <span class="agent-meta-name">Finn</span>
+        <span class="agent-meta-time">${_cardTime}</span>
+      </div>
+      <div class="agent-message-body"></div>
+    `;
+
     const card = document.createElement('div');
     card.className = 'rich-component rich-card';
-    card.dataset.componentId = component.id;
 
     const { title, content, subtitle, icon, status, actions = [], collapsible, collapsed } = component.data;
 
@@ -214,7 +227,7 @@ export class CardComponentRenderer extends BaseComponentRenderer {
       });
     }
 
-    return card;
+    return wrapper;
   }
 
   update(element: HTMLElement, component: RichComponent, updates?: Record<string, any>): void {
@@ -777,18 +790,37 @@ export class DataFrameComponentRenderer extends BaseComponentRenderer {
 // Text component renderer
 export class TextComponentRenderer extends BaseComponentRenderer {
   render(component: RichComponent): HTMLElement {
+    const _textTime = new Date(component.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const wrapper = document.createElement('div');
+    wrapper.className = 'agent-message-row';
+    wrapper.dataset.componentId = component.id;
+    wrapper.innerHTML = `
+      <div class="agent-meta">
+        <img class="agent-meta-icon" src="/img/app-icon-512.png" alt="" width="22" height="22">
+        <span class="agent-meta-name">Finn</span>
+        <span class="agent-meta-time">${_textTime}</span>
+      </div>
+      <div class="agent-message-body"></div>
+    `;
+
     const container = document.createElement('div');
     container.className = 'rich-component rich-text';
-    container.dataset.componentId = component.id;
 
     const {
-      content,
       markdown = false,
       code_language,
       font_size,
       font_weight,
       text_align
     } = component.data;
+
+    // Extract [KNOPPEN: ...] tag before rendering
+    const rawContent: string = component.data.content || '';
+    const knappenMatch = rawContent.match(/\[KNOPPEN:\s*([^\]]+)\]\s*$/);
+    const cleanContent = knappenMatch ? rawContent.slice(0, knappenMatch.index).trimEnd() : rawContent;
+    const quickOptions: string[] = knappenMatch
+      ? knappenMatch[1].split('|').map((o: string) => o.trim()).filter(Boolean)
+      : [];
 
     // Apply text styling
     let textStyle = '';
@@ -799,22 +831,45 @@ export class TextComponentRenderer extends BaseComponentRenderer {
     if (code_language) {
       // Code block
       container.innerHTML = `
-        <pre class="text-code" style="${textStyle}"><code class="language-${code_language}">${this.escapeHtml(content)}</code></pre>
+        <pre class="text-code" style="${textStyle}"><code class="language-${code_language}">${this.escapeHtml(cleanContent)}</code></pre>
       `;
     } else if (markdown) {
       // Markdown text (simple implementation)
       container.innerHTML = `
-        <div class="text-markdown" style="${textStyle}">${this.renderMarkdown(content)}</div>
+        <div class="text-markdown" style="${textStyle}">${this.renderMarkdown(cleanContent)}</div>
       `;
     } else {
       // Plain text
       container.innerHTML = `
-        <div class="text-content" style="${textStyle}">${this.escapeHtml(content)}</div>
+        <div class="text-content" style="${textStyle}">${this.escapeHtml(cleanContent)}</div>
       `;
     }
 
+    const messageBody = wrapper.querySelector('.agent-message-body') as HTMLElement;
+    messageBody.appendChild(container);
 
-    return container;
+    // Render quick reply buttons if options were found
+    if (quickOptions.length > 0) {
+      const repliesDiv = document.createElement('div');
+      repliesDiv.className = 'quick-replies';
+      quickOptions.forEach((opt: string) => {
+        const btn = document.createElement('button');
+        btn.className = 'quick-reply-btn';
+        btn.textContent = opt;
+        btn.addEventListener('click', () => {
+          repliesDiv.style.display = 'none';
+          wrapper.dispatchEvent(new CustomEvent('quick-reply-selected', {
+            detail: { option: opt },
+            bubbles: true,
+            composed: true
+          }));
+        });
+        repliesDiv.appendChild(btn);
+      });
+      messageBody.appendChild(repliesDiv);
+    }
+
+    return wrapper;
   }
 
   private escapeHtml(text: string): string {
@@ -1662,13 +1717,13 @@ export class ArtifactComponentRenderer extends BaseComponentRenderer {
 export class UserMessageComponentRenderer extends BaseComponentRenderer {
   render(component: RichComponent): HTMLElement {
     const messageEl = document.createElement('vanna-message');
-    messageEl.setAttribute('theme', 'light'); // Could be made dynamic
+    messageEl.setAttribute('theme', 'light');
     messageEl.dataset.componentId = component.id;
     
-    // Set properties for vanna-message
     (messageEl as any).content = component.data.content || '';
     (messageEl as any).type = 'user';
     (messageEl as any).timestamp = Date.parse(component.timestamp);
+    (messageEl as any).senderLabel = component.data.sender_email || '';
     
     return messageEl;
   }
@@ -1933,6 +1988,26 @@ export class ComponentManager {
     this.elements.clear();
     this.container.innerHTML = '';
     ensureRichComponentStyles(this.container);
+  }
+
+  /**
+   * Remove the component with the given ID and all components added after it.
+   * Used when a user edits and resends a message.
+   */
+  removeFromComponent(id: string): void {
+    const ids = Array.from(this.components.keys());
+    const startIndex = ids.indexOf(id);
+    if (startIndex === -1) return;
+
+    for (let i = startIndex; i < ids.length; i++) {
+      const componentId = ids[i];
+      const element = this.elements.get(componentId);
+      if (element) {
+        element.remove();
+        this.elements.delete(componentId);
+        this.components.delete(componentId);
+      }
+    }
   }
 
   getComponent(id: string): RichComponent | undefined {

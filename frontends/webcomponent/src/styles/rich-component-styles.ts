@@ -29,6 +29,51 @@ export const richComponentStyles = css`
     color: var(--vanna-foreground-default);
   }
 
+  /* Agent attribution row – wraps cards and text blocks */
+  .agent-message-row {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: var(--vanna-space-5);
+  }
+
+  .agent-message-row .agent-meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 4px;
+  }
+
+  .agent-message-row .agent-meta-icon {
+    width: 22px;
+    height: 22px;
+    border-radius: 5px;
+    object-fit: cover;
+    display: block;
+    flex-shrink: 0;
+  }
+
+  .agent-message-row .agent-meta-name {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--vanna-foreground-default);
+  }
+
+  .agent-message-row .agent-meta-time {
+    font-size: 11px;
+    color: var(--vanna-foreground-dimmest);
+    font-weight: 400;
+  }
+
+  .agent-message-row .agent-message-body {
+    min-width: 0;
+  }
+
+  /* Remove the outer margin when wrapped in agent-message-row */
+  .agent-message-row .rich-component {
+    margin-bottom: 0;
+  }
+
   /* Card */
   .rich-card {
     overflow: hidden;
@@ -622,9 +667,18 @@ export const richComponentStyles = css`
   }
 
   /* Text components */
+  .rich-component.rich-text {
+    background: #FFFFFF;
+    border: 1px solid #E8E4DC;
+    border-top: 3px solid #F0A500;
+    border-radius: var(--vanna-border-radius-md);
+    overflow: hidden;
+    box-shadow: 0 1px 4px rgba(20, 18, 24, 0.06);
+  }
+
   .text-markdown {
-    padding-left: var(--vanna-space-4);
-    line-height: 1.6;
+    padding: var(--vanna-space-5) var(--vanna-space-6);
+    line-height: 1.7;
     font-family: var(--vanna-font-family-default);
   }
 
@@ -636,6 +690,21 @@ export const richComponentStyles = css`
   .text-markdown h6 {
     margin: var(--vanna-space-3) 0 var(--vanna-space-2) 0;
     color: var(--vanna-foreground-default);
+    letter-spacing: -0.01em;
+  }
+
+  .text-markdown h1 {
+    font-size: 1.375rem;
+    font-weight: 700;
+    color: #141218;
+    border-bottom: 1px solid #F0EDEA;
+    padding-bottom: var(--vanna-space-3);
+    margin-bottom: var(--vanna-space-4);
+  }
+
+  .text-markdown h2 {
+    font-size: 1.125rem;
+    font-weight: 600;
   }
 
   .text-markdown h1:first-child,
@@ -649,7 +718,8 @@ export const richComponentStyles = css`
 
   .text-markdown p {
     margin: var(--vanna-space-2) 0;
-    color: var(--vanna-foreground-default);
+    color: #45405A;
+    font-size: 0.9375rem;
   }
 
   .text-markdown ul,
@@ -1756,6 +1826,50 @@ export const richComponentStyles = css`
   .rich-button.button-grayed-out:hover {
     opacity: 0.4;
     filter: grayscale(50%);
+  }
+
+  /* Quick reply option buttons */
+  .quick-replies {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(226, 223, 216, 0.7);
+  }
+
+  .quick-reply-btn {
+    padding: 7px 14px 7px 11px;
+    border-radius: 2px;
+    border: 1px solid #E2DFD8;
+    border-left: 3px solid #F0A500;
+    background: #FAFAF8;
+    color: #45405A;
+    font-size: 13px;
+    font-weight: 500;
+    font-family: inherit;
+    letter-spacing: 0.01em;
+    line-height: 1.4;
+    cursor: pointer;
+    transition: background 150ms ease, color 150ms ease, border-color 150ms ease, box-shadow 150ms ease;
+    white-space: nowrap;
+  }
+
+  .quick-reply-btn:hover {
+    background: #141218;
+    border-color: #141218;
+    border-left-color: #F0A500;
+    color: #FFFFFF;
+    box-shadow: 0 2px 8px rgba(20, 18, 24, 0.15);
+  }
+
+  .quick-reply-btn:active {
+    background: #2A2636;
+    border-color: #2A2636;
+    border-left-color: #F0A500;
+    color: #FFFFFF;
+    box-shadow: none;
+    transform: translateY(1px);
   }
 `;
 

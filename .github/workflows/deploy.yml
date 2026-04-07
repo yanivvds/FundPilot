@@ -1,0 +1,20 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches: [main]
+
+# Only allow one deployment at a time; cancel any in-progress run
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false   # wait for current deploy to finish, don't cancel it
+
+jobs:
+  deploy:
+    name: Deploy
+    runs-on: self-hosted   # GitHub Actions runner installed on the Windows VM
+
+    steps:
+      - name: Run deploy script
+        shell: powershell
+        run: C:\FundPilot\deploy\deploy.ps1

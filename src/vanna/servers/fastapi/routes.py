@@ -3,7 +3,7 @@ FastAPI route implementations for Vanna Agents.
 """
 
 import json
-import traceback
+import logging
 from typing import Any, AsyncGenerator, Dict, Optional
 
 from fastapi import FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect
@@ -12,6 +12,16 @@ from fastapi.responses import StreamingResponse, HTMLResponse
 from ..base import ChatHandler, ChatRequest, ChatResponse
 from ..base.templates import get_index_html
 from ...core.user.request_context import RequestContext
+
+logger = logging.getLogger(__name__)
+
+GENERIC_ERROR = "An internal error occurred. Please try again later."
+
+
+def _safe_error_message(e: Exception) -> str:
+    """Return a generic message for clients; log the real exception server-side."""
+    logger.exception("Unhandled error: %s", e)
+    return GENERIC_ERROR
 
 
 def register_chat_routes(
@@ -32,9 +42,17 @@ def register_chat_routes(
         dev_mode = config.get("dev_mode", False)
         cdn_url = config.get("cdn_url", "https://img.vanna.ai/vanna-components.js")
         api_base_url = config.get("api_base_url", "")
+        supabase_url = config.get("supabase_url", "")
+        supabase_publishable_key = config.get("supabase_publishable_key", "")
+        require_mfa = config.get("require_mfa", True)
 
         return get_index_html(
-            dev_mode=dev_mode, cdn_url=cdn_url, api_base_url=api_base_url
+            dev_mode=dev_mode,
+            cdn_url=cdn_url,
+            api_base_url=api_base_url,
+            supabase_url=supabase_url,
+            supabase_publishable_key=supabase_publishable_key,
+            require_mfa=require_mfa,
         )
 
     @app.post("/api/vanna/v2/chat_sse")
@@ -59,11 +77,9 @@ def register_chat_routes(
                     yield f"data: {chunk_json}\n\n"
                 yield "data: [DONE]\n\n"
             except Exception as e:
-                traceback.print_stack()
-                traceback.print_exc()
                 error_data = {
                     "type": "error",
-                    "data": {"message": str(e)},
+                    "data": {"message": _safe_error_message(e)},
                     "conversation_id": chat_request.conversation_id or "",
                     "request_id": chat_request.request_id or "",
                 }
@@ -102,12 +118,10 @@ def register_chat_routes(
 
                     chat_request = ChatRequest(**data)
                 except Exception as e:
-                    traceback.print_stack()
-                    traceback.print_exc()
                     await websocket.send_json(
                         {
                             "type": "error",
-                            "data": {"message": f"Invalid request: {str(e)}"},
+                            "data": {"message": _safe_error_message(e)},
                         }
                     )
                     continue
@@ -132,12 +146,10 @@ def register_chat_routes(
                     )
 
                 except Exception as e:
-                    traceback.print_stack()
-                    traceback.print_exc()
                     await websocket.send_json(
                         {
                             "type": "error",
-                            "data": {"message": str(e)},
+                            "data": {"message": _safe_error_message(e)},
                             "conversation_id": chat_request.conversation_id or "",
                             "request_id": chat_request.request_id or "",
                         }
@@ -146,13 +158,11 @@ def register_chat_routes(
         except WebSocketDisconnect:
             pass
         except Exception as e:
-            traceback.print_stack()
-            traceback.print_exc()
             try:
                 await websocket.send_json(
                     {
                         "type": "error",
-                        "data": {"message": f"WebSocket error: {str(e)}"},
+                        "data": {"message": _safe_error_message(e)},
                     }
                 )
             except Exception:
@@ -178,6 +188,4 @@ def register_chat_routes(
             result = await chat_handler.handle_poll(chat_request)
             return result
         except Exception as e:
-            traceback.print_stack()
-            traceback.print_exc()
-            raise HTTPException(status_code=500, detail=f"Chat failed: {str(e)}")
+            raise HTTPException(status_code=500, detail=_safe_error_message(e))
