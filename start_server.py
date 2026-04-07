@@ -12,6 +12,10 @@ from dotenv import load_dotenv
 from fundpilot_config import create_fundpilot_agent
 from vanna.servers.fastapi import VannaFastAPIServer
 
+# Load .env at module level so environment variables are available when uvicorn
+# imports this module (before __main__ is reached).
+load_dotenv()
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s %(levelname)s %(name)s: %(message)s",
@@ -29,7 +33,13 @@ STATIC_JS = ROOT / "static" / "vanna-components.js"
 
 
 def build_frontend():
-    """Bouw de frontend web component en kopieer naar static/."""
+    """Bouw de frontend web component en kopieer naar static/.
+
+    NOTE: This function is intentionally NOT called at startup anymore.
+    Building the frontend is the deploy script's responsibility (run it once
+    before starting the server, e.g. in CI/CD or a Dockerfile RUN step).
+    Call this function manually if you need to rebuild locally.
+    """
     # Skip rebuild if the static bundle already exists (e.g. Docker pre-built)
     if STATIC_JS.exists() and os.getenv("SKIP_FRONTEND_BUILD", "").lower() in ("1", "true"):
         print("  [frontend] Bestaande build gevonden, rebuild overgeslagen.")
@@ -64,75 +74,79 @@ def build_frontend():
         print("  [frontend] dist/vanna-components.js niet gevonden na build.")
 
 
-def main():
-    """Start de FundPilot webserver."""
+def _print_startup_info():
+    """Print startup information about the server configuration."""
     print("FundPilot Multi-Database Chat Server starten...")
     print()
+    print("FundPilot Agent succesvol aangemaakt.")
+    print(f"  Model:     {os.getenv('OPENAI_MODEL', 'gpt-4o')}")
+    print(f"  Server:    {os.getenv('MSSQL_SERVER', 'server')}")
+    print(f"  Databases: {len(DATABASES)} -- {', '.join(DATABASES[:3])} + Archive")
+    print(f"  Modus:     Alleen-lezen (SELECT)")
+    print()
+    print("Webserver wordt gestart...")
+    print("  Open:     http://localhost:8000")
+    print("  API docs: http://localhost:8000/docs")
+    print("  Druk Ctrl+C om te stoppen")
+    print()
 
-    try:
-        load_dotenv()
 
-        # Build frontend before starting the server
-        build_frontend()
-        print()
+# ---------------------------------------------------------------------------
+# Module-level app creation — required for `uvicorn start_server:app`
+# ---------------------------------------------------------------------------
 
-        agent = create_fundpilot_agent()
-
-        print("FundPilot Agent succesvol aangemaakt.")
-        print(f"  Model:     {os.getenv('OPENAI_MODEL', 'gpt-4o')}")
-        print(f"  Server:    {os.getenv('MSSQL_SERVER', '192.168.78.123')}")
-        print(f"  Databases: {len(DATABASES)} -- {', '.join(DATABASES[:3])} + Archive")
-        print(f"  Modus:     Alleen-lezen (SELECT)")
-        print()
-
-        # -- Validate keys: secret keys must NEVER reach the browser --------
-        publishable_key = os.getenv("SUPABASE_PUBLISHABLE_KEY", "")
-        if publishable_key.startswith("sb_secret_") or publishable_key.startswith("sbp_"):
-            raise ValueError(
-                "SUPABASE_PUBLISHABLE_KEY contains a secret key! "
-                "Use the publishable key (sb_publishable_...) for the browser. "
-                "The secret key must only be used server-side (SUPABASE_SECRET_KEY)."
-            )
-
-        require_mfa = os.getenv("REQUIRE_MFA", "true").lower() == "true"
-
-        server = VannaFastAPIServer(
-            agent,
-            config={
-                "cdn_url": "/static/vanna-components.js",
-                "supabase_url": os.getenv("SUPABASE_URL", ""),
-                "supabase_publishable_key": publishable_key,
-                "require_mfa": require_mfa,
-                "cors": {
-                    "enabled": True,
-                    "allow_origins": os.getenv("ALLOWED_ORIGINS", "http://localhost:3000").split(","),
-                    "allow_credentials": True,
-                    "allow_methods": ["GET", "POST"],
-                    "allow_headers": ["Authorization", "Content-Type"],
-                },
-            },
+try:
+    # -- Validate keys: secret keys must NEVER reach the browser --------
+    _publishable_key = os.getenv("SUPABASE_PUBLISHABLE_KEY", "")
+    if _publishable_key.startswith("sb_secret_") or _publishable_key.startswith("sbp_"):
+        raise ValueError(
+            "SUPABASE_PUBLISHABLE_KEY contains a secret key! "
+            "Use the publishable key (sb_publishable_...) for the browser. "
+            "The secret key must only be used server-side (SUPABASE_SECRET_KEY)."
         )
 
-        print("Webserver wordt gestart...")
-        print("  Open:     http://localhost:8000")
-        print("  API docs: http://localhost:8000/docs")
-        print("  Druk Ctrl+C om te stoppen")
-        print()
+    _require_mfa = os.getenv("REQUIRE_MFA", "true").lower() == "true"
 
-        server.run()
+    agent = create_fundpilot_agent()
 
-    except KeyboardInterrupt:
-        print("\nServer gestopt door gebruiker.")
-    except Exception as e:
-        print(f"Server kon niet starten: {e}")
-        print()
-        print("Probeer het volgende:")
-        print("1. Controleer je .env bestand")
-        print("2. Controleer of SQL Server bereikbaar is op 192.168.78.123")
-        print("3. Controleer je OpenAI API key")
-        print("4. Installeer dependencies:")
-        print("   pip install 'vanna[fastapi,mssql,openai,chromadb]' python-dotenv sqlparse")
+    server = VannaFastAPIServer(
+        agent,
+        config={
+            "cdn_url": "/static/vanna-components.js",
+            "supabase_url": os.getenv("SUPABASE_URL", ""),
+            "supabase_publishable_key": _publishable_key,
+            "require_mfa": _require_mfa,
+            "cors": {
+                "enabled": True,
+                "allow_origins": os.getenv("ALLOWED_ORIGINS", "http://localhost:3000").split(","),
+                "allow_credentials": True,
+                "allow_methods": ["GET", "POST"],
+                "allow_headers": ["Authorization", "Content-Type"],
+            },
+        },
+    )
+
+    app = server.create_app()
+
+    _print_startup_info()
+
+except Exception as _startup_exc:
+    raise RuntimeError(
+        f"Server kon niet starten: {_startup_exc}\n\n"
+        "Probeer het volgende:\n"
+        "1. Controleer je .env bestand\n"
+        "2. Controleer of SQL Server bereikbaar is op server\n"
+        "3. Controleer je OpenAI API key\n"
+        "4. Installeer dependencies:\n"
+        "   pip install 'vanna[fastapi,mssql,openai,chromadb]' python-dotenv sqlparse"
+    ) from _startup_exc
 
 
 if __name__ == "__main__":
-    main()
+    import uvicorn
+
+    port = int(os.getenv("PORT", "8000"))
+    try:
+        uvicorn.run("start_server:app", host="127.0.0.1", port=port)
+    except KeyboardInterrupt:
+        print("\nServer gestopt door gebruiker.")
