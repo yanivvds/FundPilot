@@ -32,5 +32,10 @@ frontends/**/static/
 frontends/**/.storybook-static/
 frontends/**/package-lock.json
 frontends/**/.mypy_cache/
+logs/*
+logs/
+logs*/
+logs
 SETUP_GUIDE.md
 deploy/README.mdlogs/
+deploy/README.md
