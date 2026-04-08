@@ -59,25 +59,25 @@ class DefaultWorkflowHandler(WorkflowHandler):
             is_admin = "admin" in user.group_memberships
 
             help_content = (
-                "## 🤖 Vanna AI Assistant\n\n"
-                "I'm your AI data analyst! Here's what I can help you with:\n\n"
-                "**💬 Natural Language Queries**\n"
-                '- "Show me sales data for last quarter"\n'
-                '- "Which customers have the highest orders?"\n'
-                '- "Create a chart of revenue by month"\n\n'
-                "**🔧 Commands**\n"
-                "- `/help` - Show this help message\n"
+                "## 🤖 Welkom bij FundPilot\n\n"
+                "Uw AI data-analist voor fondsenwervingsdata! Dit is wat ik voor u kan betekenen:\n\n"
+                "**💬 Stel vragen in het Nederlands**\n"
+                "- \"Welke leveranciers of campagnes leveren structureel de hoogste retentie na 6 maanden op?\"\n"
+                "- \"Welke donateurs hebben meer dan €10.000 bijgedragen dit jaar?\"\n"
+                "- \"Wat is de werkelijke kostprijs per duurzame donor, uitgesplitst per kanaal?\"\n\n"
+                "**🔧 Applicatie Commando's**\n"
+                "- `/help` - Toon dit overzicht van mogelijkheden\n"
             )
 
             if is_admin:
                 help_content += (
-                    "\n**🔒 Admin Commands**\n"
-                    "- `/status` - Check setup status\n"
-                    "- `/memories` - View and manage recent memories\n"
-                    "- `/delete [id]` - Delete a memory by ID\n"
+                    "\n**🔒 Beheerders Commando's**\n"
+                    "- `/status` - Bekijk systeem status\n"
+                    "- `/memories` - Beheer recente AI-kennis (memories)\n"
+                    "- `/delete [id]` - Verwijder een memory via ID\n"
                 )
 
-            help_content += "\n\nJust ask me anything about your data in plain English!"
+            help_content += "\n\nStel gerust uw vragen over de fondsenwervingsdata!"
 
             return WorkflowResult(
                 should_skip_llm=True,

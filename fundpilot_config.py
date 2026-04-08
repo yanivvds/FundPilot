@@ -13,6 +13,9 @@ from __future__ import annotations
 
 import logging
 import os
+from pathlib import Path
+
+_HERE = Path(__file__).resolve().parent
 
 from vanna import Agent
 from vanna.core.registry import ToolRegistry
@@ -137,7 +140,7 @@ class FundpilotUserResolver(UserResolver):
 
 def _create_agent_memory():
     """Create ChromaDB-based persistent agent memory with fallback."""
-    persist_dir = os.getenv("CHROMADB_PERSIST_DIR", "./chromadb_data")
+    persist_dir = os.getenv("CHROMADB_PERSIST_DIR", str(_HERE / "chromadb_data"))
 
     try:
         from vanna.integrations.chromadb import ChromaAgentMemory
@@ -196,7 +199,7 @@ def create_fundpilot_agent() -> Agent:
     inner_runner = MSSQLRunner(odbc_conn_str=os.getenv("MSSQL_CONN_STR"))
     sql_runner = ReadOnlySqlRunner(inner=inner_runner, max_rows=10000)
 
-    file_system = LocalFileSystem("./vanna_data")
+    file_system = LocalFileSystem(str(_HERE / "vanna_data"))
     agent_memory = _create_agent_memory()
     system_prompt_builder = FundPilotSystemPromptBuilder()
     user_resolver = FundpilotUserResolver()
@@ -293,7 +296,7 @@ def get_db_tool() -> RunSqlTool:
 
     inner_runner = MSSQLRunner(odbc_conn_str=os.getenv("MSSQL_CONN_STR"))
     sql_runner = ReadOnlySqlRunner(inner=inner_runner, max_rows=10000)
-    file_system = LocalFileSystem("./vanna_data")
+    file_system = LocalFileSystem(str(_HERE / "vanna_data"))
 
     return RunSqlTool(
         sql_runner=sql_runner,

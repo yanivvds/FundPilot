@@ -22,6 +22,9 @@ yourdomain.com {
         header_up X-Real-IP        {remote_host}
         header_up X-Forwarded-For  {remote_host}
         header_up X-Forwarded-Proto {scheme}
+
+        # Required for SSE (server-sent events) streaming — disable buffering
+        flush_interval -1
     }
 
     # Access log
