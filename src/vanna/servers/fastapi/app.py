@@ -56,9 +56,10 @@ class VannaFastAPIServer:
             app.add_middleware(CORSMiddleware, **cors_params)
 
         # Serve static files (local component builds, assets)
+        import os
         static_folder = self.config.get("static_folder", "static")
+        
         try:
-            import os
 
             if os.path.exists(static_folder):
                 app.mount(

@@ -14,7 +14,7 @@ from vanna.servers.fastapi import VannaFastAPIServer
 
 # Load .env at module level so environment variables are available when uvicorn
 # imports this module (before __main__ is reached).
-load_dotenv()
+load_dotenv(Path(__file__).resolve().parent / ".env")
 
 logging.basicConfig(
     level=logging.INFO,
@@ -49,13 +49,14 @@ def build_frontend():
         print("  [frontend] Map niet gevonden, build overgeslagen.")
         return
 
-    if not shutil.which("npm"):
+    npm_path = shutil.which("npm")
+    if not npm_path:
         print("  [frontend] npm niet gevonden, build overgeslagen.")
         return
 
     print("  [frontend] npm run build...")
     result = subprocess.run(
-        ["npm", "run", "build"],
+        [npm_path, "run", "build"],
         cwd=FRONTEND_DIR,
         capture_output=True,
         text=True,
@@ -112,6 +113,8 @@ try:
     server = VannaFastAPIServer(
         agent,
         config={
+            "static_folder": str(ROOT / "static"),
+            "img_folder": str(ROOT / "img"),
             "cdn_url": "/static/vanna-components.js",
             "supabase_url": os.getenv("SUPABASE_URL", ""),
             "supabase_publishable_key": _publishable_key,
@@ -127,6 +130,14 @@ try:
     )
 
     app = server.create_app()
+
+    # Create root directory static files explicit route
+    from fastapi.staticfiles import StaticFiles
+    import os
+    if os.path.exists(str(ROOT / "static")):
+        app.mount("/static", StaticFiles(directory=str(ROOT / "static")), name="root_static")
+    if os.path.exists(str(ROOT / "img")):
+        app.mount("/img", StaticFiles(directory=str(ROOT / "img")), name="root_img")
 
     _print_startup_info()
 
